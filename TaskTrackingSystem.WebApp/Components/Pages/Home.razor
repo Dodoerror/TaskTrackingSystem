@@ -1,0 +1,166 @@
+@page "/"
+@page "/dashboard"
+@using Microsoft.AspNetCore.Authorization
+@rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="space-y-8">
+    <!-- Page Header -->
+    <div>
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h2>
+        <p class="text-slate-500 mt-1">Real-time metrics and project overview.</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="flex items-center justify-center py-20">
+            <div class="flex items-center space-x-3 text-slate-500">
+                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span class="text-sm font-medium">Loading dashboard...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Metric Cards -->
+        <div class="grid gap-6 md:grid-cols-3">
+            <!-- Users Card -->
+            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-slate-500">Total Users</span>
+                    <div class="rounded-lg bg-indigo-50 p-2 text-indigo-600">
+                        <i data-lucide="users" class="h-5 w-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="text-3xl font-bold tracking-tight text-slate-900">@summary.TotalUsers</span>
+                </div>
+            </div>
+
+            <!-- Projects Card -->
+            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-slate-500">Active Projects</span>
+                    <div class="rounded-lg bg-emerald-50 p-2 text-emerald-600">
+                        <i data-lucide="folder-kanban" class="h-5 w-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="text-3xl font-bold tracking-tight text-slate-900">@summary.ActiveProjectsCount</span>
+                </div>
+            </div>
+
+            <!-- Tasks Card -->
+            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-slate-500">Pending Tasks</span>
+                    <div class="rounded-lg bg-amber-50 p-2 text-amber-600">
+                        <i data-lucide="check-square" class="h-5 w-5"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="text-3xl font-bold tracking-tight text-slate-900">@summary.PendingTasksCount</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grids -->
+        <div class="grid gap-6 md:grid-cols-2">
+            <!-- Task Status Overview -->
+            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 class="font-semibold text-lg text-slate-900 mb-4">Task Status Overview</h3>
+                <div class="space-y-3">
+                    @foreach (var status in taskStatuses)
+                    {
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+                            <div class="flex items-center space-x-3">
+                                <span class="h-2.5 w-2.5 rounded-full @GetStatusColor(status.StatusId)"></span>
+                                <span class="font-medium text-sm text-slate-700">@status.StatusName</span>
+                            </div>
+                            <span class="font-semibold text-sm text-slate-900">@status.TaskCount tasks</span>
+                        </div>
+                    }
+                    @if (!taskStatuses.Any())
+                    {
+                        <p class="text-sm text-slate-400 text-center py-4">No task data available.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Project Progress -->
+            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 class="font-semibold text-lg text-slate-900 mb-4">Project Progress</h3>
+                <div class="space-y-5">
+                    @foreach (var project in projectProgress)
+                    {
+                        <div>
+                            <div class="flex justify-between text-sm font-medium mb-2">
+                                <span class="text-slate-700">@project.ProjectName</span>
+                                <span class="text-slate-900">@project.CompletionPercentage%</span>
+                            </div>
+                            <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                                <div class="h-full rounded-full bg-slate-900 transition-all duration-500" style="width: @(project.CompletionPercentage)%"></div>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">@project.CompletedTasksCount / @project.TotalTasksCount tasks completed</p>
+                        </div>
+                    }
+                    @if (!projectProgress.Any())
+                    {
+                        <p class="text-sm text-slate-400 text-center py-4">No project data available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private DashboardSummaryDto summary = new();
+    private List<TaskStatusOverviewDto> taskStatuses = new();
+    private List<ProjectProgressDto> projectProgress = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = HttpClientFactory.CreateClient("WebApi");
+        try
+        {
+            var summaryResult = await client.GetFromJsonAsync<Result<DashboardSummaryDto>>("Dashboard/summary");
+            if (summaryResult?.IsSuccess == true && summaryResult.Value != null)
+                summary = summaryResult.Value;
+
+            var tasksResult = await client.GetFromJsonAsync<Result<List<TaskStatusOverviewDto>>>("Dashboard/tasks-overview");
+            if (tasksResult?.IsSuccess == true && tasksResult.Value != null)
+                taskStatuses = tasksResult.Value;
+
+            var progressResult = await client.GetFromJsonAsync<Result<List<ProjectProgressDto>>>("Dashboard/project-progress");
+            if (progressResult?.IsSuccess == true && progressResult.Value != null)
+                projectProgress = progressResult.Value;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Dashboard load error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private string GetStatusColor(long statusId) => statusId switch
+    {
+        1 => "bg-slate-400",
+        2 => "bg-blue-500",
+        3 => "bg-emerald-500",
+        _ => "bg-slate-300"
+    };
+}

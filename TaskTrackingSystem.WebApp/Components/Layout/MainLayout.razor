@@ -1,0 +1,102 @@
+@inherits LayoutComponentBase
+
+<div class="flex h-screen bg-slate-50 font-sans text-slate-900 antialiased">
+    <!-- Left Sidebar -->
+    <aside class="flex w-64 flex-col border-r border-slate-200 bg-white">
+        <!-- Brand / Header -->
+        <div class="flex h-16 items-center px-6 border-b border-slate-100">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white font-bold">T</span>
+            <span class="ml-3 font-semibold text-lg tracking-tight">TaskFlow</span>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 space-y-1 px-4 py-6">
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="" Match="NavLinkMatch.All">
+                <i data-lucide="layout-dashboard" class="h-4 w-4 mr-3 text-slate-500"></i>
+                Dashboard
+            </NavLink>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="projects">
+                <i data-lucide="folder-kanban" class="h-4 w-4 mr-3 text-slate-500"></i>
+                Projects
+            </NavLink>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="tasks">
+                <i data-lucide="check-square" class="h-4 w-4 mr-3 text-slate-500"></i>
+                Tasks
+            </NavLink>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="users">
+                <i data-lucide="users" class="h-4 w-4 mr-3 text-slate-500"></i>
+                Users
+            </NavLink>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="roles">
+                <i data-lucide="shield-check" class="h-4 w-4 mr-3 text-slate-500"></i>
+                Roles
+            </NavLink>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="reports">
+                <i data-lucide="bar-chart-3" class="h-4 w-4 mr-3 text-slate-500"></i>
+                Reports
+            </NavLink>
+        </nav>
+
+        <!-- Profile Section -->
+        <div class="border-t border-slate-100 p-4">
+            <AuthorizeView>
+                <Authorized>
+                    <div class="flex items-center rounded-xl p-2 hover:bg-slate-50 cursor-pointer transition-all justify-between group relative">
+                        <div class="flex items-center">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white font-semibold text-sm">
+                                @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
+                            </span>
+                            <div class="ml-3 overflow-hidden max-w-[100px]">
+                                <p class="text-sm font-medium text-slate-900 truncate">@context.User.Identity?.Name</p>
+                                <p class="text-xs text-slate-500 truncate">User Account</p>
+                            </div>
+                        </div>
+                        <button @onclick="Logout" class="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all ml-2" title="Sign Out">
+                            <i data-lucide="log-out" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/login" class="flex items-center justify-center rounded-xl bg-slate-900 text-white px-4 py-2.5 text-sm font-medium hover:bg-slate-800 transition-all">
+                        Sign In
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-y-auto">
+        <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
+            <h1 class="text-lg font-semibold text-slate-900">Workspace</h1>
+            <div class="flex items-center space-x-4">
+                <button class="relative rounded-full p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-500 transition-all">
+                    <i data-lucide="bell" class="h-5 w-5"></i>
+                    <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500"></span>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-8">
+            @Body
+        </div>
+    </main>
+</div>
+
+@code {
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initIcons");
+    }
+
+    private async Task Logout()
+    {
+        var customProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
+        await customProvider.MarkUserAsLoggedOut();
+        Navigation.NavigateTo("login", forceLoad: true);
+    }
+}
