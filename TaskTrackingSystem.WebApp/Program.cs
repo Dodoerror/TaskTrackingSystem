@@ -1,5 +1,6 @@
-using TaskTrackingSystem.WebApp.Components;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using TaskTrackingSystem.WebApp;
+using TaskTrackingSystem.WebApp.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,16 +14,16 @@ builder.Services.AddHttpClient("WebApi", client =>
     client.BaseAddress = new Uri("http://localhost:5018/api/");
 });
 
-// Register Blazor Authentication & Authorization
-// A default scheme is required so the framework doesn't throw when ChallengeAsync is called.
-// The actual auth flow is handled by CustomAuthenticationStateProvider + RedirectToLogin component.
+// Cookie authentication for Blazor pages and HTTP middleware.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/login";
         options.AccessDeniedPath = "/login";
     });
+builder.Services.AddAuthorization();
 builder.Services.AddAuthorizationCore();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
 var app = builder.Build();
@@ -38,7 +39,11 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
+
+app.MapAccountEndpoints();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

@@ -1,6 +1,6 @@
 @page "/users"
 @using Microsoft.AspNetCore.Authorization
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject IHttpClientFactory HttpClientFactory
 @inject IJSRuntime JS

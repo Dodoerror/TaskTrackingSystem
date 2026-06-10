@@ -9,7 +9,7 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly AuthService _authService; // 👈 Class ကို တိုက်ရိုက်သုံးထားပါတယ်
+        private readonly AuthService _authService;
 
         public AuthController(AuthService authService)
         {

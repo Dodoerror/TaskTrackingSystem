@@ -1,8 +1,26 @@
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
 @code {
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Navigation.NavigateTo("login");
+        if (firstRender)
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                return;
+            }
+
+            // Use path only — PathAndQuery would nest /login?ReturnUrl=... inside ReturnUrl and cause loops.
+            var path = new Uri(Navigation.Uri).AbsolutePath;
+            if (path.Equals("/login", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var returnUrl = Uri.EscapeDataString(path);
+            Navigation.NavigateTo($"/login?ReturnUrl={returnUrl}");
+        }
     }
 }
