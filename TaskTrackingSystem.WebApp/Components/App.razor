@@ -17,21 +17,27 @@
             theme: {
                 extend: {
                     colors: {
-                        border: "hsl(240 5.9% 90%)",
-                        background: "hsl(0 0% 100%)",
-                        foreground: "hsl(240 10% 3.9%)",
-                        card: "hsl(0 0% 100%)",
-                        "card-foreground": "hsl(240 10% 3.9%)",
+                        // A fun, vibrant color palette
+                        background: "hsl(260 40% 98%)",       // Soft, playful lavender-white
+                        foreground: "hsl(260 50% 15%)",       // Deep plum for readable text
+                        card: "hsl(0 0% 100%)",               // Pure white cards to pop out
+                        "card-foreground": "hsl(260 50% 15%)",
                         popover: "hsl(0 0% 100%)",
-                        "popover-foreground": "hsl(240 10% 3.9%)",
-                        primary: "hsl(240 5.9% 10%)",
-                        "primary-foreground": "hsl(0 0% 98%)",
-                        secondary: "hsl(240 4.8% 95.9%)",
-                        "secondary-foreground": "hsl(240 5.9% 10%)",
-                        muted: "hsl(240 4.8% 95.9%)",
-                        "muted-foreground": "hsl(240 3.8% 46.1%)",
-                        accent: "hsl(240 4.8% 95.9%)",
-                        "accent-foreground": "hsl(240 5.9% 10%)",
+                        "popover-foreground": "hsl(260 50% 15%)",
+
+                        primary: "hsl(262 80% 50%)",           // Vibrant electric purple
+                        "primary-foreground": "hsl(0 0% 100%)",
+
+                        secondary: "hsl(325 90% 60%)",         // Fun hot pink / magenta
+                        "secondary-foreground": "hsl(0 0% 100%)",
+
+                        muted: "hsl(260 30% 90%)",             // Soft pastel purple-gray
+                        "muted-foreground": "hsl(260 20% 45%)",
+
+                        accent: "hsl(170 80% 40%)",            // Fresh mint / teal for eye-catching bits
+                        "accent-foreground": "hsl(0 0% 100%)",
+
+                        border: "hsl(260 30% 88%)",           // Clean, visible borders
                     }
                 }
             }
@@ -50,6 +56,17 @@
             if (window.lucide) {
                 window.lucide.createIcons();
             }
+        }
+        function downloadFile(filename, contentType, content) {
+            const file = new Blob([content], {type: contentType});
+            const exportUrl = URL.createObjectURL(file);
+            const a = document.createElement("a");
+            a.href = exportUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(exportUrl);
         }
         // Run once loaded
         window.addEventListener('DOMContentLoaded', initIcons);

@@ -20,6 +20,34 @@
         </button>
     </div>
 
+    <!-- Search and Filters -->
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-[240px]">
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Search Users</label>
+                <input @bind="searchQuery" @bind:event="oninput" type="text" placeholder="Search by name, email, username..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Role</label>
+                <select @bind="filterRoleId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
+                    <option value="0">All Roles</option>
+                    @foreach (var r in roles)
+                    {
+                        <option value="@r.Id">@r.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+                <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
     @if (isLoading)
     {
         <div class="flex items-center justify-center py-20">
@@ -45,9 +73,9 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @if (users.Any())
+                    @if (FilteredUsers.Any())
                     {
-                        @foreach (var user in users)
+                        @foreach (var user in FilteredUsers)
                         {
                             <tr class="hover:bg-slate-50/50 transition-colors">
                                 <td class="px-6 py-4">
@@ -188,6 +216,45 @@
     private string? errorMessage;
     private List<UserDto> users = new();
     private List<RoleDto> roles = new();
+
+    private string searchQuery = "";
+    private long filterRoleId = 0;
+    private string filterStatus = "all";
+
+    private IEnumerable<UserDto> FilteredUsers
+    {
+        get
+        {
+            var result = users.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                var query = searchQuery.Trim().ToLower();
+                result = result.Where(u => 
+                    (u.FirstName != null && u.FirstName.ToLower().Contains(query)) ||
+                    (u.LastName != null && u.LastName.ToLower().Contains(query)) ||
+                    (u.Username != null && u.Username.ToLower().Contains(query)) ||
+                    (u.Email != null && u.Email.ToLower().Contains(query))
+                );
+            }
+
+            if (filterRoleId > 0)
+            {
+                result = result.Where(u => u.RoleId == filterRoleId);
+            }
+
+            if (filterStatus == "active")
+            {
+                result = result.Where(u => u.IsActive);
+            }
+            else if (filterStatus == "inactive")
+            {
+                result = result.Where(u => !u.IsActive);
+            }
+
+            return result;
+        }
+    }
 
     // Form fields
     private long editingId;
