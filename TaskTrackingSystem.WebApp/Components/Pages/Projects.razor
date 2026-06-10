@@ -1,10 +1,12 @@
 @page "/projects"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Projects</PageTitle>
 
@@ -252,13 +254,22 @@
             }
             else
             {
+                long currentUserId = 1; // Default fallback
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var user = authState.User;
+                var nameIdentifierClaim = user.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (nameIdentifierClaim != null && long.TryParse(nameIdentifierClaim.Value, out var parsedId))
+                {
+                    currentUserId = parsedId;
+                }
+
                 var dto = new CreateProjectDto
                 {
                     Name = formName,
                     Description = formDescription,
                     StartDate = formStartDate,
                     EndDate = formEndDate,
-                    CreatedById = 1 // Default user
+                    CreatedById = currentUserId
                 };
                 var response = await client.PostAsJsonAsync("Project", dto);
                 if (!response.IsSuccessStatusCode)
