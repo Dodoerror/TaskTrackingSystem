@@ -1,5 +1,6 @@
 @page "/users"
 @using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.WebApp.Components.Partial
 @rendermode InteractiveServer
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject IHttpClientFactory HttpClientFactory
@@ -205,8 +206,8 @@
         var client = HttpClientFactory.CreateClient("WebApi");
         try
         {
-            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User");
-            var rolesTask = client.GetFromJsonAsync<List<RoleDto>>("Role");
+            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
+            var rolesTask = client.GetFromJsonAsync<List<RoleDto>>("Role", Serialization.CaseInsensitive);
             await System.Threading.Tasks.Task.WhenAll(usersTask, rolesTask);
 
             users = usersTask.Result ?? new();
@@ -230,7 +231,7 @@
     private async Task LoadUsers()
     {
         var client = HttpClientFactory.CreateClient("WebApi");
-        users = await client.GetFromJsonAsync<List<UserDto>>("User") ?? new();
+        users = await client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive) ?? new();
     }
 
     private void OpenCreateModal()
@@ -274,7 +275,7 @@
     {
         if (string.IsNullOrWhiteSpace(formUsername) || string.IsNullOrWhiteSpace(formFirstName) || string.IsNullOrWhiteSpace(formLastName) || string.IsNullOrWhiteSpace(formEmail))
         {
-            errorMessage = "Please fill in all required fields.";
+            errorMessage = ResultMessages.FillAllFields;
             return;
         }
 
@@ -298,7 +299,7 @@
                 var response = await client.PutAsJsonAsync($"User/{editingId}", dto);
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = "Failed to update user.";
+                    errorMessage = ResultMessages.FailedToUpdateUser;
                     return;
                 }
             }
@@ -306,7 +307,7 @@
             {
                 if (string.IsNullOrWhiteSpace(formPassword) || formPassword.Length < 6)
                 {
-                    errorMessage = "Password must be at least 6 characters.";
+                    errorMessage = ResultMessages.PasswordMinLength;
                     isSaving = false;
                     return;
                 }
@@ -323,7 +324,7 @@
                 var response = await client.PostAsJsonAsync("User", dto);
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = "Failed to create user.";
+                    errorMessage = ResultMessages.FailedToCreateUser;
                     return;
                 }
             }

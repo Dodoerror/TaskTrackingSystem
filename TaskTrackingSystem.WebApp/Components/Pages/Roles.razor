@@ -1,5 +1,6 @@
 @page "/roles"
 @using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.WebApp.Components.Partial
 @rendermode InteractiveServer
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject IHttpClientFactory HttpClientFactory
@@ -228,7 +229,7 @@
         var client = HttpClientFactory.CreateClient("WebApi");
         try
         {
-            roleList = await client.GetFromJsonAsync<List<RoleDto>>("Role") ?? new();
+            roleList = await client.GetFromJsonAsync<List<RoleDto>>("Role", Serialization.CaseInsensitive) ?? new();
         }
         catch (Exception ex)
         {
@@ -271,7 +272,7 @@
     {
         if (string.IsNullOrWhiteSpace(formName))
         {
-            roleError = "Role name is required.";
+            roleError = ResultMessages.RoleNameRequired;
             return;
         }
 
@@ -285,13 +286,13 @@
             {
                 var dto = new UpdateRoleDto { Name = formName, Description = formDescription };
                 var response = await client.PutAsJsonAsync($"Role/{editingId}", dto);
-                if (!response.IsSuccessStatusCode) { roleError = "Failed to update role."; return; }
+                 if (!response.IsSuccessStatusCode) { roleError = ResultMessages.FailedToUpdateRole; return; }
             }
             else
             {
                 var dto = new CreateRoleDto { Name = formName, Description = formDescription };
                 var response = await client.PostAsJsonAsync("Role", dto);
-                if (!response.IsSuccessStatusCode) { roleError = "Failed to create role."; return; }
+                 if (!response.IsSuccessStatusCode) { roleError = ResultMessages.FailedToCreateRole; return; }
             }
             CloseRoleModal();
             await LoadRoles();
@@ -326,9 +327,9 @@
         var client = HttpClientFactory.CreateClient("WebApi");
         try
         {
-            allPermissions = await client.GetFromJsonAsync<List<PermissionDto>>("Permission") ?? new();
+            allPermissions = await client.GetFromJsonAsync<List<PermissionDto>>("Permission", Serialization.CaseInsensitive) ?? new();
 
-            var assignedResult = await client.GetFromJsonAsync<Result<List<long>>>($"Role/{role.Id}/permissions");
+            var assignedResult = await client.GetFromJsonAsync<Result<List<long>>>($"Role/{role.Id}/permissions", Serialization.CaseInsensitive);
             selectedPermissionIds = new HashSet<long>(assignedResult?.Value ?? new());
         }
         catch (Exception ex)

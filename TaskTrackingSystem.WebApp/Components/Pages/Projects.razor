@@ -1,5 +1,6 @@
 @page "/projects"
 @using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.WebApp.Components.Partial
 @rendermode InteractiveServer
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject IHttpClientFactory HttpClientFactory
@@ -173,7 +174,7 @@
         var client = HttpClientFactory.CreateClient("WebApi");
         try
         {
-            projects = await client.GetFromJsonAsync<List<ProjectDto>>("Project") ?? new();
+            projects = await client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive) ?? new();
         }
         catch (Exception ex)
         {
@@ -224,7 +225,7 @@
     {
         if (string.IsNullOrWhiteSpace(formName))
         {
-            errorMessage = "Project name is required.";
+            errorMessage = ResultMessages.ProjectNameRequired;
             return;
         }
 
@@ -246,7 +247,7 @@
                 var response = await client.PutAsJsonAsync($"Project/{editingId}", dto);
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = "Failed to update project.";
+                    errorMessage = ResultMessages.FailedToUpdateProject;
                     return;
                 }
             }
@@ -263,7 +264,7 @@
                 var response = await client.PostAsJsonAsync("Project", dto);
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = "Failed to create project.";
+                    errorMessage = ResultMessages.FailedToCreateProject;
                     return;
                 }
             }

@@ -1,6 +1,7 @@
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Auth;
 
 namespace TaskTrackingSystem.WebApi.Features.Auth
@@ -25,27 +26,30 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
 
                 if (response == null)
                 {
-                    return Unauthorized(new { message = "Invalid username/email or password." });
+                    // Wrap the error inside your official Result architecture
+                    return Unauthorized(Result<AuthResponseDto>.Failure(ResultMessages.InvalidCredentials, 401));
                 }
 
-                return Ok(response);
+                // Wrap the payload inside your official Result architecture
+                return Ok(Result<AuthResponseDto>.Success(response));
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(Result<AuthResponseDto>.Failure(ex.Message, 400));
             }
         }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
             try
             {
                 var response = await _authService.RegisterAsync(registerDto);
-                return Ok(response);
+                return Ok(Result<AuthResponseDto>.Success(response));
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(Result<AuthResponseDto>.Failure(ex.Message, 400));
             }
         }
     }

@@ -2,6 +2,10 @@
 @layout Layout.EmptyLayout
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @rendermode InteractiveServer
+@using System.Text.Json
+@using TaskTrackingSystem.Shared
+@using TaskTrackingSystem.Shared.Models.Auth
+@using TaskTrackingSystem.WebApp.Components.Partial
 @inject IHttpClientFactory HttpClientFactory
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
@@ -24,7 +28,7 @@
 
         <EditForm Model="@loginModel" OnValidSubmit="HandleLogin" class="mt-8 space-y-6">
             <DataAnnotationsValidator />
-            
+
             <div class="space-y-4 rounded-md shadow-sm">
                 <div>
                     <label for="usernameOrEmail" class="block text-sm font-medium text-slate-700 mb-1">Username or Email</label>
@@ -55,6 +59,7 @@
 </div>
 
 @code {
+    // Note: Ensure LoginDto is imported or reference its full namespace if it resides elsewhere
     private LoginDto loginModel = new();
     private bool isSubmitting = false;
     private string? errorMessage;
@@ -68,26 +73,37 @@
         try
         {
             var response = await client.PostAsJsonAsync("Auth/login", loginModel);
+
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-                if (result != null && !string.IsNullOrEmpty(result.Token))
+                // Using the exact shared Result pattern class matching the Web API's envelope
+                var result = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
+
+                if (result != null && result.IsSuccess && result.Value != null && !string.IsNullOrEmpty(result.Value.Token))
                 {
                     var customProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
-                    await customProvider.MarkUserAsAuthenticated(result.Token);
-                    Navigation.NavigateTo("/Dashboard");
+                    await customProvider.MarkUserAsAuthenticated(result.Value.Token);
+
+                    Navigation.NavigateTo("/dashboard");
                 }
                 else
                 {
-                    errorMessage = "Failed to parse authentication response.";
+                    // Gracefully fallback to server-provided error messaging if available
+                    errorMessage = result?.ErrorMessage ?? ResultMessages.ParseAuthResponseFailed;
                 }
             }
             else
             {
-                var errorObj = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-                errorMessage = errorObj != null && errorObj.TryGetValue("message", out var msg) 
-                    ? msg 
-                    : "Invalid login credentials.";
+                // Try reading structured failure data matching your custom Result pattern framework
+                try
+                {
+                    var errorResult = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
+                    errorMessage = errorResult?.ErrorMessage ?? ResultMessages.InvalidCredentials;
+                }
+                catch
+                {
+                    errorMessage = ResultMessages.InvalidCredentials;
+                }
             }
         }
         catch (Exception ex)

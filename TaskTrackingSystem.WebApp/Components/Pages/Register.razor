@@ -1,4 +1,5 @@
 @page "/register"
+@using TaskTrackingSystem.WebApp.Components.Partial
 @layout Layout.EmptyLayout
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @rendermode InteractiveServer
@@ -91,24 +92,29 @@
             var response = await client.PostAsJsonAsync("Auth/register", registerModel);
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-                if (result != null && !string.IsNullOrEmpty(result.Token))
+                var result = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
+                if (result != null && result.IsSuccess && result.Value != null && !string.IsNullOrEmpty(result.Value.Token))
                 {
                     var customProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
-                    await customProvider.MarkUserAsAuthenticated(result.Token);
-                    Navigation.NavigateTo("dashboard");
+                    await customProvider.MarkUserAsAuthenticated(result.Value.Token);
+                    Navigation.NavigateTo("/dashboard");
                 }
                 else
                 {
-                    errorMessage = "Failed to parse registration response.";
+                    errorMessage = result?.ErrorMessage ?? ResultMessages.ParseRegistrationResponseFailed;
                 }
             }
             else
             {
-                var errorObj = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-                errorMessage = errorObj != null && errorObj.TryGetValue("message", out var msg) 
-                    ? msg 
-                    : "Registration failed. Please try again.";
+                try
+                {
+                    var errorResult = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
+                    errorMessage = errorResult?.ErrorMessage ?? ResultMessages.RegistrationFailed;
+                }
+                catch
+                {
+                    errorMessage = ResultMessages.RegistrationFailed;
+                }
             }
         }
         catch (Exception ex)

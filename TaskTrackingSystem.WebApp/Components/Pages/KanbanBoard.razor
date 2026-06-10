@@ -1,5 +1,6 @@
 @page "/projects/{ProjectId:long}/tasks"
 @using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.WebApp.Components.Partial
 @rendermode InteractiveServer
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject IHttpClientFactory HttpClientFactory
@@ -190,7 +191,7 @@
         var client = HttpClientFactory.CreateClient("WebApi");
         try
         {
-            var result = await client.GetFromJsonAsync<Result<List<TaskDto>>>($"Project/{ProjectId}/tasks");
+            var result = await client.GetFromJsonAsync<Result<List<TaskDto>>>($"Project/{ProjectId}/tasks", Serialization.CaseInsensitive);
             if (result?.IsSuccess == true && result.Value != null)
                 tasks = result.Value;
         }

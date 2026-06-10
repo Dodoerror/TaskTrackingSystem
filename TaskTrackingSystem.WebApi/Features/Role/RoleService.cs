@@ -112,12 +112,12 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleId && r.IsDeleted != true);
             if (role == null)
             {
-                return Result.Failure($"Role with ID {roleId} not found.", 404);
+                return Result.Failure(ResultMessages.RoleNotFound(roleId), 404);
             }
 
             if (dto.PermissionIds == null)
             {
-                return Result.Failure("Permission IDs cannot be null.", 400);
+                return Result.Failure(ResultMessages.PermissionIdsCannotBeNull, 400);
             }
 
             // Verify that all requested permission IDs are valid (not deleted)
@@ -131,7 +131,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 var invalidPermissionIds = dto.PermissionIds.Except(validPermissionIds).ToList();
                 if (invalidPermissionIds.Any())
                 {
-                    return Result.Failure($"The following permission IDs are invalid or deleted: {string.Join(", ", invalidPermissionIds)}", 400);
+                    return Result.Failure(ResultMessages.InvalidPermissionIds(string.Join(", ", invalidPermissionIds)), 400);
                 }
             }
 
@@ -165,7 +165,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             var roleExists = await _db.Roles.AnyAsync(r => r.Id == roleId && r.IsDeleted != true);
             if (!roleExists)
             {
-                return Result<List<long>>.Failure($"Role with ID {roleId} not found.", 404);
+                return Result<List<long>>.Failure(ResultMessages.RoleNotFound(roleId), 404);
             }
 
             var permissionIds = await _db.RolePermissions
