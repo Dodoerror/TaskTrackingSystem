@@ -6,19 +6,16 @@
 
 main {
     flex: 1;
-    background-color: #f9dce1;
-    /* Using your soft pink for the main area */
+    background-color: var(--app-bg);
 }
 
 .sidebar {
-    background-color: #235a57;
-    /* Using your deep teal */
+    background-color: #ffffff;
 }
 
 .top-row {
-    background-color: #2d2d2d;
-    /* Using your dark gray */
-    border-bottom: 1px solid #e6e094;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;

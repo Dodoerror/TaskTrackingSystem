@@ -56,10 +56,10 @@
                 </div>
             </div>
 
-            @if (ShowError)
+            @if (!string.IsNullOrEmpty(Error))
             {
-                <div class="p-3 rounded-lg bg-red-50 border border-red-100">
-                    <p class="text-sm text-red-600 text-center">Registration failed. Please try again.</p>
+                <div class="p-3 rounded-lg border" style="background-color: var(--status-warning-bg); border-color: rgba(255, 191, 89, 0.2);">
+                    <p class="text-sm text-center" style="color: var(--text-primary); font-weight: 500;">@Error</p>
                 </div>
             }
 
@@ -75,6 +75,4 @@
 @code {
     [SupplyParameterFromQuery(Name = "error")]
     private string? Error { get; set; }
-
-    private bool ShowError => string.Equals(Error, "failed", StringComparison.OrdinalIgnoreCase);
 }

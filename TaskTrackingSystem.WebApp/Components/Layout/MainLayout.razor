@@ -2,11 +2,11 @@
 @implements IDisposable
 @using System.Security.Claims
 
-<div class="flex h-screen bg-slate-50 font-sans text-slate-900 antialiased">
+<div class="flex h-screen font-sans antialiased" style="background-color: var(--app-bg); color: var(--text-primary);">
     <aside class="flex w-64 flex-col border-r border-slate-200 bg-white">
         <div class="flex h-16 items-center px-6 border-b border-slate-100">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">T</span>
-            <span class="ml-3 font-semibold text-lg tracking-tight text-slate-900">TaskFlow</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg text-white font-bold" style="background-color: var(--brand-primary);">T</span>
+            <span class="ml-3 font-semibold text-lg tracking-tight" style="color: var(--text-primary);">TaskFlow</span>
         </div>
 
         <NavMenu />
@@ -15,23 +15,23 @@
             <AuthorizeView>
                 <Authorized>
                     <div class="flex items-center rounded-xl p-2 hover:bg-slate-50 transition-all">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white font-semibold text-sm shrink-0">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full text-white font-semibold text-sm shrink-0" style="background-color: var(--brand-primary);">
                             @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
                         </span>
                         <div class="ml-3 overflow-hidden flex flex-col">
-                            <span class="text-sm font-semibold text-slate-900 truncate max-w-[130px]">@context.User.Identity?.Name</span>
+                            <span class="text-sm font-semibold truncate max-w-[130px]" style="color: var(--text-primary);">@context.User.Identity?.Name</span>
                             <form method="post" action="/account/logout" class="mt-0.5">
                                 <AntiforgeryToken />
-                                <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-semibold text-left flex items-center gap-1 transition-all">
+                                <button type="submit" class="text-xs hover:opacity-80 font-semibold text-left flex items-center gap-1 transition-all" style="color: var(--brand-accent);">
                                     <i data-lucide="log-out" class="h-3 w-3"></i>
                                     Sign Out
                                 </button>
-                            </form>
+                             </form>
                         </div>
                     </div>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="/login" class="flex items-center justify-center rounded-xl bg-blue-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-blue-700 transition-all">
+                    <a href="/login" class="flex items-center justify-center rounded-xl text-white px-4 py-2.5 text-sm font-medium transition-all hover:opacity-90" style="background-color: var(--brand-primary);">
                         Sign In
                     </a>
                 </NotAuthorized>
@@ -41,11 +41,11 @@
 
     <main class="flex-1 flex flex-col overflow-y-auto">
         <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
-            <h1 class="text-lg font-semibold text-slate-900">Workspace</h1>
+            <h1 class="text-lg font-semibold" style="color: var(--text-primary);">Workspace</h1>
             <div class="flex items-center space-x-4">
-                <button class="relative rounded-full p-1.5 text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-all">
+                <button class="relative rounded-full p-1.5 text-slate-400 hover:bg-slate-50 transition-all">
                     <i data-lucide="bell" class="h-5 w-5"></i>
-                    <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-500"></span>
+                    <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full" style="background-color: var(--brand-primary);"></span>
                 </button>
             </div>
         </header>
@@ -58,14 +58,14 @@
             else
             {
                 <div class="flex flex-col items-center justify-center py-20 px-4">
-                    <div class="rounded-full bg-rose-50 p-4 text-rose-600 mb-4">
+                    <div class="rounded-full p-4 mb-4" style="color: var(--brand-accent); background-color: var(--status-warning-bg);">
                         <i data-lucide="shield-alert" class="h-12 w-12"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900">Access Denied</h3>
-                    <p class="text-slate-500 text-center mt-2 max-w-sm text-sm">
+                    <h3 class="text-xl font-bold" style="color: var(--text-primary);">Access Denied</h3>
+                    <p class="text-center mt-2 max-w-sm text-sm" style="color: var(--text-muted);">
                         You do not have permission to access this page. Please contact your system administrator.
                     </p>
-                    <a href="/dashboard" class="mt-6 inline-flex items-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors shadow-sm">
+                    <a href="/dashboard" class="mt-6 inline-flex items-center rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors shadow-sm hover:opacity-90" style="background-color: var(--brand-primary);">
                         <i data-lucide="arrow-left" class="h-4 w-4 mr-2"></i>
                         Back to Dashboard
                     </a>

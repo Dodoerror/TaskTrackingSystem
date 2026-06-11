@@ -97,5 +97,14 @@ namespace TaskTrackingSystem.Shared
         // Register
         public const string ParseRegistrationResponseFailed = "Failed to parse registration response.";
         public const string RegistrationFailed = "Registration failed. Please try again.";
+
+        // Username Validation Rules
+        public const string UsernameMinLength = "Username must be at least 3 characters long.";
+        public const string UsernameNoSpaces = "Username cannot contain spaces.";
+        public const string UsernameInvalidCharacters = "Username cannot contain spaces, and can only contain letters, numbers, underscores (_), and periods (.).";
+
+        // Password Validation Rules
+        public const string PasswordMinLengthRule = "Password must be at least 8 characters long.";
+        public const string PasswordComplexityRule = "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.";
     }
 }
