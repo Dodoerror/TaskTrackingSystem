@@ -14,6 +14,7 @@ var webApiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "https://localhos
 var webApiBuilder = builder.Services.AddHttpClient("WebApi", client =>
 {
     client.BaseAddress = new Uri(webApiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(10);
 });
 
 if (builder.Environment.IsDevelopment() &&

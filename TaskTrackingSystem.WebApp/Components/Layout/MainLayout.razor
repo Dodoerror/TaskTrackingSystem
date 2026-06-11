@@ -1,6 +1,5 @@
 @inherits LayoutComponentBase
 @implements IDisposable
-@using TaskTrackingSystem.Shared.Models.Menu
 @using System.Security.Claims
 
 <div class="flex h-screen bg-slate-50 font-sans text-slate-900 antialiased">
@@ -10,41 +9,7 @@
             <span class="ml-3 font-semibold text-lg tracking-tight text-slate-900">TaskFlow</span>
         </div>
 
-        <!-- Navigation Links -->
-        <nav class="flex-1 space-y-1 px-4 py-6">
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="" Match="NavLinkMatch.All">
-                <i data-lucide="layout-dashboard" class="h-4 w-4 mr-3 text-slate-500"></i>
-                Dashboard
-            </NavLink>
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="projects">
-                <i data-lucide="folder-kanban" class="h-4 w-4 mr-3 text-slate-500"></i>
-                Projects
-            </NavLink>
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="tasks">
-                <i data-lucide="check-square" class="h-4 w-4 mr-3 text-slate-500"></i>
-                Tasks
-            </NavLink>
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="users">
-                <i data-lucide="users" class="h-4 w-4 mr-3 text-slate-500"></i>
-                Users
-            </NavLink>
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="roles">
-                <i data-lucide="shield-check" class="h-4 w-4 mr-3 text-slate-500"></i>
-                Roles
-            </NavLink>
-            <div class="relative group">
-                <button class="flex items-center w-full rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all focus:outline-none">
-                    <i data-lucide="bar-chart-3" class="h-4 w-4 mr-3 text-slate-500"></i>
-                    Reports
-                    <i data-lucide="chevron-down" class="h-3 w-3 ml-auto text-slate-500"></i>
-                </button>
-                <div class="absolute left-0 mt-1 w-48 bg-white border border-slate-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity">
-                    <NavLink class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" href="reports/tasks">Task Report</NavLink>
-                    <NavLink class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" href="reports/project-progress">Project Progress Report</NavLink>
-                    <NavLink class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" href="reports/employee">Employee Report</NavLink>
-                </div>
-            </div>
-        </nav>
+        <NavMenu />
 
         <div class="border-t border-slate-100 p-4">
             <AuthorizeView>
@@ -86,16 +51,7 @@
         </header>
 
         <div class="p-8">
-            @if (isCheckingAuth)
-            {
-                <div class="flex items-center justify-center py-20">
-                    <div class="flex items-center space-x-3 text-slate-500">
-                        <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                        <span class="text-sm font-medium">Checking authorization...</span>
-                    </div>
-                </div>
-            }
-            else if (isAuthorizedPage)
+            @if (isAuthorizedPage)
             {
                 @Body
             }
@@ -125,66 +81,47 @@
     [Inject] private MenuAuthorizationService MenuAuthorization { get; set; } = default!;
     [Inject] private Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
-    private bool isAuthorizedPage;
-    private bool isCheckingAuth = true;
+    private bool isAuthorizedPage = true;
 
     protected override void OnInitialized()
     {
         Navigation.LocationChanged += OnLocationChanged;
-        _ = CheckPageAuthorizationAsync();
+        UpdateAuthorization();
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
-        _ = CheckPageAuthorizationAsync();
+        UpdateAuthorization();
     }
 
-    private async Task CheckPageAuthorizationAsync()
+    private void UpdateAuthorization()
     {
-        isCheckingAuth = true;
-        await InvokeAsync(StateHasChanged);
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
 
-        try
+        _ = UpdateAuthorizationAsync(relativePath);
+    }
+
+    private async Task UpdateAuthorizationAsync(string relativePath)
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-            var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
-
-            if (user.Identity?.IsAuthenticated != true)
+            if (!MenuAuthorizationService.IsPublicRoute(relativePath))
             {
-                if (MenuAuthorizationService.IsPublicRoute(relativePath))
-                {
-                    isAuthorizedPage = true;
-                }
-                else
-                {
-                    var returnPath = new Uri(Navigation.Uri).AbsolutePath;
-                    Navigation.NavigateTo($"/login?ReturnUrl={Uri.EscapeDataString(returnPath)}", forceLoad: true);
-                    return;
-                }
-
-                return;
+                var returnPath = new Uri(Navigation.Uri).AbsolutePath;
+                Navigation.NavigateTo($"/login?ReturnUrl={Uri.EscapeDataString(returnPath)}");
             }
 
-            if (MenuAuthorizationService.IsPublicRoute(relativePath))
-            {
-                isAuthorizedPage = true;
-                return;
-            }
-
-            var allowedMenus = await MenuAuthorization.GetUserMenusAsync(user);
-            isAuthorizedPage = MenuAuthorization.IsRouteAllowed(allowedMenus, relativePath);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error checking page auth: {ex.Message}");
-            isAuthorizedPage = false;
-        }
-        finally
-        {
-            isCheckingAuth = false;
+            isAuthorizedPage = MenuAuthorizationService.IsPublicRoute(relativePath);
             await InvokeAsync(StateHasChanged);
+            return;
         }
+
+        isAuthorizedPage = MenuAuthorization.IsRouteAllowed(user, relativePath);
+        MenuAuthorization.PreloadMenus(user);
+        await InvokeAsync(StateHasChanged);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
