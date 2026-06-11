@@ -2,122 +2,313 @@
 @page "/Home"
 @page "/dashboard"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using TaskTrackingSystem.Shared.Models.Task
+@using TaskTrackingSystem.Shared.Models.User
+@using TaskTrackingSystem.Shared.Models.Project
+@using TaskTrackingSystem.Shared.Models.Dashboard
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
 <PageTitle>Dashboard</PageTitle>
 
-<div class="space-y-8">
-    <!-- Page Header -->
-    <div>
-        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h2>
-        <p class="text-slate-500 mt-1">Real-time metrics and project overview.</p>
+@if (isLoading)
+{
+    <div class="flex items-center justify-center py-40">
+        <div class="flex flex-col items-center space-y-4 text-violet-600">
+            <svg class="animate-spin h-10 w-10" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span class="text-sm font-semibold text-slate-500">Loading Taskify Dashboard...</span>
+        </div>
     </div>
-
-    @if (isLoading)
-    {
-        <div class="flex items-center justify-center py-20">
-            <div class="flex items-center space-x-3 text-slate-500">
-                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span class="text-sm font-medium">Loading dashboard...</span>
+}
+else
+{
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- LEFT COLUMN (Main Dashboard Content) -->
+        <div class="lg:col-span-8 space-y-8">
+            
+            <!-- Welcome Header -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-800">Hi, @currentUserName</h2>
+                    <p class="text-violet-600 font-medium mt-1">Let's finish your task today!</p>
+                </div>
+                <button class="relative rounded-full p-2 bg-white border border-slate-100 text-slate-500 hover:text-violet-600 hover:bg-violet-50 transition-all shadow-sm">
+                    <i data-lucide="bell" class="h-5 w-5"></i>
+                    <span class="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-violet-600"></span>
+                </button>
             </div>
-        </div>
-    }
-    else
-    {
-        <!-- Metric Cards -->
-        <div class="grid gap-6 md:grid-cols-3">
-            <!-- Users Card -->
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+
+            <!-- Today Task Banner -->
+            <div class="relative overflow-hidden rounded-3xl bg-[#F0EDFF] border border-violet-100 p-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+                <div class="space-y-4 max-w-md z-10">
+                    <h3 class="text-2xl font-bold text-[#4C1D95]">Today Task</h3>
+                    <p class="text-[#6D28D9] text-sm leading-relaxed">Check your daily tasks and schedules to stay on top of your workflow.</p>
+                    <a href="/tasks" class="inline-flex items-center justify-center rounded-xl bg-violet-800 text-white px-5 py-2.5 text-xs font-semibold hover:bg-violet-900 transition-all shadow-md">
+                        Today's schedule
+                    </a>
+                </div>
+                <div class="hidden md:block absolute right-8 bottom-0 top-0 w-64 h-full shrink-0">
+                    <svg class="w-full h-full text-violet-300" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="110" cy="110" r="70" fill="currentColor" fill-opacity="0.15"/>
+                        <!-- Stylized clock illustration -->
+                        <circle cx="110" cy="110" r="45" stroke="#7C3AED" stroke-width="4" fill="white" shadow="sm"/>
+                        <path d="M110 80V110L125 118" stroke="#7C3AED" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Calendar visual -->
+                        <rect x="35" y="100" width="45" height="45" rx="6" fill="#8B5CF6" />
+                        <rect x="42" y="94" width="6" height="10" rx="3" fill="#4C1D95" />
+                        <rect x="68" y="94" width="6" height="10" rx="3" fill="#4C1D95" />
+                        <circle cx="58" cy="122" r="4" fill="white" />
+                        <!-- Decorative stars/elements -->
+                        <path d="M150 60L153 66L159 67L154 71L156 77L150 74L144 77L146 71L141 67L147 66L150 60Z" fill="#F59E0B" />
+                        <circle cx="165" cy="130" r="6" fill="#EC4899" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Active Task Cards Row -->
+            <div class="space-y-4">
                 <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-slate-500">Total Users</span>
-                    <div class="rounded-lg bg-indigo-50 p-2 text-indigo-600">
-                        <i data-lucide="users" class="h-5 w-5"></i>
-                    </div>
+                    <h3 class="font-bold text-lg text-slate-800">In Progress Tasks</h3>
+                    <a href="/tasks" class="text-xs font-semibold text-violet-600 hover:text-violet-800 transition-colors">See all</a>
                 </div>
-                <div class="mt-4">
-                    <span class="text-3xl font-bold tracking-tight text-slate-900">@summary.TotalUsers</span>
-                </div>
-            </div>
-
-            <!-- Projects Card -->
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-slate-500">Active Projects</span>
-                    <div class="rounded-lg bg-emerald-50 p-2 text-emerald-600">
-                        <i data-lucide="folder-kanban" class="h-5 w-5"></i>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <span class="text-3xl font-bold tracking-tight text-slate-900">@summary.ActiveProjectsCount</span>
-                </div>
-            </div>
-
-            <!-- Tasks Card -->
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-slate-500">Pending Tasks</span>
-                    <div class="rounded-lg bg-amber-50 p-2 text-amber-600">
-                        <i data-lucide="check-square" class="h-5 w-5"></i>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <span class="text-3xl font-bold tracking-tight text-slate-900">@summary.PendingTasksCount</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Grids -->
-        <div class="grid gap-6 md:grid-cols-2">
-            <!-- Task Status Overview -->
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="font-semibold text-lg text-slate-900 mb-4">Task Status Overview</h3>
-                <div class="space-y-3">
-                    @foreach (var status in taskStatuses)
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    @if (ActiveTasks.Any())
                     {
-                        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                            <div class="flex items-center space-x-3">
-                                <span class="h-2.5 w-2.5 rounded-full @GetStatusColor(status.StatusId)"></span>
-                                <span class="font-medium text-sm text-slate-700">@status.StatusName</span>
+                        @foreach (var task in ActiveTasks)
+                        {
+                            var proj = projectsList.FirstOrDefault(p => p.Id == task.ProjectId);
+                            var daysLeft = (task.DueDate - DateTime.Today).Days;
+                            var progress = GetMockProgress(task.Id);
+                            <div @onclick="() => NavigateToTask(task.Id)" class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md transition-all cursor-pointer">
+                                <div class="flex items-center justify-between text-xs text-slate-400">
+                                    <span>@task.DueDate.ToString("MMM dd, yyyy")</span>
+                                    <span class="text-slate-300">•••</span>
+                                </div>
+                                <h4 class="font-bold text-sm text-slate-800 mt-3 truncate">@task.Title</h4>
+                                <p class="text-xs text-violet-600 font-semibold mt-1">@(proj?.Name ?? "General Project")</p>
+                                
+                                <!-- Progress Bar -->
+                                <div class="mt-5 space-y-1.5">
+                                    <div class="flex justify-between text-xs font-medium">
+                                        <span class="text-slate-400">Progress</span>
+                                        <span class="text-slate-800">@progress%</span>
+                                    </div>
+                                    <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                                        <div class="h-full rounded-full bg-violet-600 transition-all duration-500" style="width: @(progress)%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Footer -->
+                                <div class="flex items-center justify-between mt-5 pt-3 border-t border-slate-50">
+                                    <div class="flex -space-x-1.5">
+                                        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-700 ring-2 ring-white">U</span>
+                                        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700 ring-2 ring-white">+</span>
+                                    </div>
+                                    <span class="inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold @(daysLeft < 3 ? "bg-rose-50 text-rose-600" : "bg-violet-50 text-violet-600")">
+                                        @(daysLeft > 0 ? $"{daysLeft} days left" : daysLeft == 0 ? "Due today" : $"{Math.Abs(daysLeft)} days overdue")
+                                    </span>
+                                </div>
                             </div>
-                            <span class="font-semibold text-sm text-slate-900">@status.TaskCount tasks</span>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-span-3 rounded-2xl border border-dashed border-slate-200 bg-white/40 p-8 text-center">
+                            <i data-lucide="check-circle" class="h-8 w-8 mx-auto text-slate-300 mb-2"></i>
+                            <p class="text-xs text-slate-400">No active tasks. Start by creating a task!</p>
                         </div>
                     }
-                    @if (!taskStatuses.Any())
-                    {
-                        <p class="text-sm text-slate-400 text-center py-4">No task data available.</p>
-                    }
                 </div>
             </div>
 
-            <!-- Project Progress -->
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="font-semibold text-lg text-slate-900 mb-4">Project Progress</h3>
-                <div class="space-y-5">
-                    @foreach (var project in projectProgress)
-                    {
+            <!-- Tasks Progress Chart + Assignments Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                
+                <!-- Chart (CSS Styled) -->
+                <div class="md:col-span-7 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-bold text-sm text-slate-800">Tasks Progress</h3>
+                        <select class="rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-xs text-slate-600 focus:outline-none">
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end justify-between h-48 px-2">
+                        @foreach (var chartBar in GetChartBars())
+                        {
+                            <div class="flex flex-col items-center space-y-2 flex-1">
+                                <div class="w-2.5 rounded-full bg-slate-100 h-36 flex items-end">
+                                    <div class="w-full rounded-full bg-violet-600 transition-all duration-1000" style="height: @(chartBar.Height)%"></div>
+                                </div>
+                                <span class="text-[10px] font-medium text-slate-400 uppercase">@chartBar.Day</span>
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 mt-6 pt-4 border-t border-slate-50 text-center">
                         <div>
-                            <div class="flex justify-between text-sm font-medium mb-2">
-                                <span class="text-slate-700">@project.ProjectName</span>
-                                <span class="text-slate-900">@project.CompletionPercentage%</span>
-                            </div>
-                            <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                                <div class="h-full rounded-full bg-slate-900 transition-all duration-500" style="width: @(project.CompletionPercentage)%"></div>
-                            </div>
-                            <p class="text-xs text-slate-400 mt-1">@project.CompletedTasksCount / @project.TotalTasksCount tasks completed</p>
+                            <span class="block text-[10px] text-slate-400">Time spent</span>
+                            <span class="text-xs font-bold text-slate-800">18h</span>
+                            <span class="inline-block text-[8px] font-bold text-amber-600 bg-amber-50 rounded-full px-1.5 mt-0.5">120%</span>
                         </div>
-                    }
-                    @if (!projectProgress.Any())
-                    {
-                        <p class="text-sm text-slate-400 text-center py-4">No project data available.</p>
-                    }
+                        <div>
+                            <span class="block text-[10px] text-slate-400">Lesson Learnt</span>
+                            <span class="text-xs font-bold text-slate-800">15h</span>
+                            <span class="inline-block text-[8px] font-bold text-amber-600 bg-amber-50 rounded-full px-1.5 mt-0.5">120%</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-slate-400">Exams Passed</span>
+                            <span class="text-xs font-bold text-slate-800">2h</span>
+                            <span class="inline-block text-[8px] font-bold text-emerald-600 bg-emerald-50 rounded-full px-1.5 mt-0.5">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignments Checklist -->
+                <div class="md:col-span-5 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-sm text-slate-800">Assignments <span class="text-xs font-semibold text-slate-400">(@ChecklistTasks.Count())</span></h3>
+                        <span class="inline-block rounded-full bg-violet-50 text-violet-600 text-[10px] font-bold px-2 py-0.5">
+                            @ChecklistCompletedCount / @ChecklistTasks.Count() completed
+                        </span>
+                    </div>
+
+                    <div class="flex-1 space-y-3 overflow-y-auto max-h-[220px] pr-1">
+                        @if (ChecklistTasks.Any())
+                        {
+                            @foreach (var task in ChecklistTasks)
+                            {
+                                <div class="flex items-start justify-between p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                                    <div class="flex items-start space-x-3">
+                                        <input type="checkbox" checked="@(task.StatusId == 3)" @onchange="() => ToggleTaskStatus(task)" class="h-4 w-4 rounded border-slate-300 text-violet-600 accent-violet-600 focus:ring-violet-500 mt-0.5" />
+                                        <div>
+                                            <p class="text-xs font-semibold text-slate-800 @(task.StatusId == 3 ? "line-through text-slate-400" : "")">@task.Title</p>
+                                            <p class="text-[10px] text-slate-400 mt-0.5">@task.DueDate.ToString("dd MMM yyyy")</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] font-bold @(task.PriorityId == 3 ? "text-rose-500" : task.PriorityId == 2 ? "text-amber-500" : "text-slate-400")">
+                                        @(task.PriorityId == 3 ? "High" : task.PriorityId == 2 ? "Medium" : "Low")
+                                    </span>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center py-10">
+                                <p class="text-xs text-slate-400">No pending assignments!</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN (Side Panel Widget Stack) -->
+        <div class="lg:col-span-4 bg-[#EBE7FC] rounded-3xl p-6 space-y-6 flex flex-col justify-between shadow-inner">
+            
+            <div class="space-y-6">
+                <!-- User Profile Card -->
+                <div class="bg-white rounded-2xl p-4 flex items-center space-x-4 shadow-sm border border-violet-100">
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600 text-white font-bold text-lg shadow-md shrink-0">
+                        @(currentUserName.Length > 0 ? currentUserName[0].ToString().ToUpper() : "U")
+                    </span>
+                    <div class="overflow-hidden">
+                        <h4 class="font-bold text-sm text-slate-800 truncate">@currentUserName</h4>
+                        <p class="text-xs text-slate-400 mt-0.5">@currentUserRole</p>
+                    </div>
+                </div>
+
+                <!-- March Weekly Calendar Widget -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-violet-100 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-sm text-slate-800">@DateTime.Today.ToString("MMMM")</h4>
+                        <button @onclick='() => Navigation.NavigateTo("/tasks")' class="text-[10px] font-bold text-violet-600 hover:text-violet-800 flex items-center transition-colors">
+                            <i data-lucide="plus" class="h-3 w-3 mr-0.5"></i> Add Task
+                        </button>
+                    </div>
+                    <div class="flex justify-between gap-1 text-center">
+                        @foreach (var date in weekDates)
+                        {
+                            var isSelected = date.Date == DateTime.Today.Date;
+                            <div class="flex-1 rounded-xl py-2.5 transition-all @(isSelected ? "bg-violet-600 text-white shadow-md font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                                <span class="block text-[9px] uppercase font-semibold @(isSelected ? "text-violet-200" : "text-slate-400")">@date.ToString("ddd")</span>
+                                <span class="block text-xs font-bold mt-1">@date.Day</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Schedules List -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-violet-100 space-y-4">
+                    <h4 class="font-bold text-sm text-slate-800">Schedules</h4>
+                    <div class="space-y-3">
+                        @if (UpcomingScheduleTasks.Any())
+                        {
+                            @foreach (var task in UpcomingScheduleTasks)
+                            {
+                                <div class="flex space-x-3 group">
+                                    <div class="w-1 rounded-full bg-violet-600"></div>
+                                    <div class="flex-1 py-1">
+                                        <h5 class="text-xs font-bold text-slate-800 group-hover:text-violet-600 transition-colors">@task.Title</h5>
+                                        <p class="text-[9px] text-slate-400 mt-0.5">@task.DueDate.ToString("MMM dd") — 10:00 AM - 12:00 PM</p>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="flex space-x-3">
+                                <div class="w-1 rounded-full bg-slate-200"></div>
+                                <div class="flex-1 py-1">
+                                    <h5 class="text-xs font-bold text-slate-400">No schedules</h5>
+                                    <p class="text-[9px] text-slate-400 mt-0.5">Enjoy your free time!</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
+
+            <!-- Batchmates (Team Members) -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-violet-100 space-y-4 mt-6">
+                <h4 class="font-bold text-sm text-slate-800">Batchmates</h4>
+                <div class="space-y-3">
+                    @foreach (var user in GetTeamMembers())
+                    {
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-[10px] font-bold text-indigo-700 border border-indigo-100">
+                                    @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
+                                </span>
+                                <div>
+                                    <h5 class="text-xs font-bold text-slate-800">@user.FirstName @user.LastName</h5>
+                                    <p class="text-[9px] text-slate-400">@@@user.Username</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button @onclick='() => Navigation.NavigateTo("/users")' class="w-full text-center rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 py-2 text-xs font-bold transition-all border border-slate-100">
+                    See all
+                </button>
+            </div>
+
         </div>
-    }
-</div>
+
+    </div>
+}
 
 @code {
     private bool isLoading = true;
@@ -125,26 +316,57 @@
     private List<TaskStatusOverviewDto> taskStatuses = new();
     private List<ProjectProgressDto> projectProgress = new();
 
+    private List<TaskDto> taskList = new();
+    private List<UserDto> usersList = new();
+    private List<ProjectDto> projectsList = new();
+    private string currentUserName = "User";
+    private string currentUserRole = "Member";
+    private List<DateTime> weekDates = new();
+
     protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
     {
         var client = ApiClient.CreateClient();
         try
         {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            currentUserName = user.Identity?.Name ?? "User";
+            currentUserRole = user.FindFirst(ClaimTypes.Role)?.Value ?? "Member";
+
+            // Populate weekly dates starting Monday
+            weekDates.Clear();
+            var today = DateTime.Today;
+            var startOfWeek = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
+            for (int i = 0; i < 6; i++)
+            {
+                weekDates.Add(startOfWeek.AddDays(i));
+            }
+
             var summaryResult = await client.GetFromJsonAsync<Result<DashboardSummaryDto>>("Dashboard/summary", Serialization.CaseInsensitive);
             if (summaryResult?.IsSuccess == true && summaryResult.Value != null)
                 summary = summaryResult.Value;
 
-            var tasksResult = await client.GetFromJsonAsync<Result<List<TaskStatusOverviewDto>>>("Dashboard/tasks-overview", Serialization.CaseInsensitive);
-            if (tasksResult?.IsSuccess == true && tasksResult.Value != null)
-                taskStatuses = tasksResult.Value;
+            var tasksOverviewResult = await client.GetFromJsonAsync<Result<List<TaskStatusOverviewDto>>>("Dashboard/tasks-overview", Serialization.CaseInsensitive);
+            if (tasksOverviewResult?.IsSuccess == true && tasksOverviewResult.Value != null)
+                taskStatuses = tasksOverviewResult.Value;
 
             var progressResult = await client.GetFromJsonAsync<Result<List<ProjectProgressDto>>>("Dashboard/project-progress", Serialization.CaseInsensitive);
             if (progressResult?.IsSuccess == true && progressResult.Value != null)
                 projectProgress = progressResult.Value;
+
+            // Load additional lists for dashboard widgets
+            taskList = await client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive) ?? new();
+            usersList = await client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive) ?? new();
+            projectsList = await client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive) ?? new();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Dashboard load error: {ex.Message}");
+            Console.WriteLine($"Dashboard widgets load error: {ex.Message}");
         }
         finally
         {
@@ -157,11 +379,72 @@
         await JS.InvokeVoidAsync("initIcons");
     }
 
-    private string GetStatusColor(long statusId) => statusId switch
+    // Custom data slices for Dashboard widgets
+    private IEnumerable<TaskDto> ActiveTasks => taskList.Where(t => t.StatusId == 2).Take(3); // In Progress tasks
+    private IEnumerable<TaskDto> ChecklistTasks => taskList.Where(t => t.StatusId != 3).Take(4); // Pending tasks
+    private int ChecklistCompletedCount => taskList.Count(t => t.StatusId == 3);
+    private IEnumerable<TaskDto> UpcomingScheduleTasks => taskList.OrderBy(t => t.DueDate).Take(2);
+
+    private IEnumerable<UserDto> GetTeamMembers()
     {
-        1 => "bg-slate-400",
-        2 => "bg-blue-500",
-        3 => "bg-emerald-500",
-        _ => "bg-slate-300"
-    };
+        // Return first 3 users who are not the logged in user
+        return usersList.Where(u => !u.Username.Equals(currentUserName, StringComparison.OrdinalIgnoreCase)).Take(3);
+    }
+
+    private int GetMockProgress(long id)
+    {
+        return (int)((id * 17) % 70 + 20); // deterministic mock progress 20-90%
+    }
+
+    private List<ChartBar> GetChartBars()
+    {
+        return new List<ChartBar>
+        {
+            new("m", 30),
+            new("t", 80),
+            new("w", 60),
+            new("t", 40),
+            new("f", 90),
+            new("s", 35),
+            new("s", 15)
+        };
+    }
+
+    private async Task ToggleTaskStatus(TaskDto task)
+    {
+        var newStatusId = task.StatusId == 3 ? 1 : 3;
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.PatchAsync($"Task/{task.Id}/status?statusId={newStatusId}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                task.StatusId = newStatusId;
+                await LoadDashboardData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Toggle task error: {ex.Message}");
+        }
+    }
+
+    private void NavigateToProjectBoard(long projectId)
+    {
+        if (projectId > 0)
+        {
+            Navigation.NavigateTo($"/projects/{projectId}/tasks");
+        }
+        else
+        {
+            Navigation.NavigateTo("/board");
+        }
+    }
+
+    private void NavigateToTask(long taskId)
+    {
+        Navigation.NavigateTo($"/tasks?taskId={taskId}");
+    }
+
+    private record ChartBar(string Day, int Height);
 }

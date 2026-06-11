@@ -8,16 +8,16 @@
     {
         @foreach (var menu in menus)
         {
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+            <NavLink class="nav-link-item"
                      href="@MenuAuthorizationService.NormalizeMenuHref(menu.MenuUrl)"
                      Match="@(string.IsNullOrWhiteSpace(menu.MenuUrl) || menu.MenuUrl.Trim('/') is "dashboard" or "" ? NavLinkMatch.All : NavLinkMatch.Prefix)">
                 @if (!string.IsNullOrEmpty(menu.Icon))
                 {
-                    <i data-lucide="@menu.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                    <i data-lucide="@menu.Icon" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
                 }
                 else
                 {
-                    <i data-lucide="circle" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                    <i data-lucide="circle" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
                 }
                 <span>@menu.MenuName</span>
             </NavLink>
@@ -27,9 +27,9 @@
     {
         @foreach (var link in fallbackLinks)
         {
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+            <NavLink class="nav-link-item"
                      href="@link.Href" Match="@link.Match">
-                <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
                 <span>@link.Label</span>
             </NavLink>
         }
@@ -73,7 +73,8 @@
         {
             ("/dashboard", "Dashboard", "layout-dashboard", NavLinkMatch.All),
             ("/projects", "Projects", "folder-kanban", NavLinkMatch.Prefix),
-            ("/tasks", "Tasks", "check-square", NavLinkMatch.Prefix)
+            ("/tasks", "Tasks", "check-square", NavLinkMatch.Prefix),
+            ("/board", "Board", "kanban", NavLinkMatch.Prefix)
         };
 
         if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))

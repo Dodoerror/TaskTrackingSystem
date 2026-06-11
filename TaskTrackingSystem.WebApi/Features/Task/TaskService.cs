@@ -63,15 +63,30 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             };
         }
 
-        public async Task<TaskDto> CreateTaskAsync(CreateTaskDto dto, long? currentUserId = null)
+        public async Task<Result<TaskDto>> CreateTaskAsync(CreateTaskDto dto, long? currentUserId = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Title))
+            {
+                return Result<TaskDto>.Failure(ResultMessages.TaskTitleRequired, 400);
+            }
+            if (dto.ProjectId == 0)
+            {
+                return Result<TaskDto>.Failure(ResultMessages.SelectProjectRequired, 400);
+            }
+
+            var projectExists = await _db.Projects.AnyAsync(p => p.Id == dto.ProjectId && p.IsDeleted != true);
+            if (!projectExists)
+            {
+                return Result<TaskDto>.Failure(ResultMessages.ProjectNotFound(dto.ProjectId), 404);
+            }
+
             var task = new TaskTrackingSystem.Database.AppDbContextModels.Task
             {
                 Title = dto.Title,
                 Description = dto.Description,
                 ProjectId = dto.ProjectId,
-                StatusId = dto.StatusId == 0 ? 1 : dto.StatusId, // Default to 1 (e.g. New/To Do) if not specified
-                PriorityId = dto.PriorityId == 0 ? 2 : dto.PriorityId, // Default to 2 (e.g. Medium) if not specified
+                StatusId = dto.StatusId == 0 ? 1 : dto.StatusId,
+                PriorityId = dto.PriorityId == 0 ? 2 : dto.PriorityId,
                 AssignedTo = dto.AssignedTo,
                 AssignedBy = dto.AssignedBy,
                 EstimatedHours = dto.EstimatedHours,
@@ -84,7 +99,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             _db.Tasks.Add(task);
             await _db.SaveChangesAsync();
 
-            return new TaskDto
+            var resultDto = new TaskDto
             {
                 Id = task.Id,
                 Title = task.Title,
@@ -98,12 +113,19 @@ namespace TaskTrackingSystem.WebApi.Features.Task
                 DueDate = task.DueDate,
                 CreatedAt = task.CreatedAt ?? DateTime.UtcNow
             };
+
+            return Result<TaskDto>.Success(resultDto, 201);
         }
 
-        public async Task<bool> UpdateTaskAsync(long id, UpdateTaskDto dto, long? currentUserId = null)
+        public async Task<Result> UpdateTaskAsync(long id, UpdateTaskDto dto, long? currentUserId = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Title))
+            {
+                return Result.Failure(ResultMessages.TaskTitleRequired, 400);
+            }
+
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
-            if (task == null) return false;
+            if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
 
             task.Title = dto.Title;
             task.Description = dto.Description;
@@ -118,18 +140,18 @@ namespace TaskTrackingSystem.WebApi.Features.Task
 
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
-            return true;
+            return Result.Success(200);
         }
 
-        public async Task<bool> SoftDeleteTaskAsync(long id)
+        public async Task<Result> SoftDeleteTaskAsync(long id)
         {
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
-            if (task == null) return false;
+            if (task == null) return Result.Failure(ResultMessages.TaskNotFound(id), 404);
 
             task.IsDeleted = true;
             _db.Tasks.Update(task);
             await _db.SaveChangesAsync();
-            return true;
+            return Result.Success(200);
         }
 
         public async Task<Result<IEnumerable<TaskDto>>> GetTasksByUserIdAsync(long userId)
