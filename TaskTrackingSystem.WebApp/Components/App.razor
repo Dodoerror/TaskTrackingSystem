@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="TaskTrackingSystem.WebApp.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <!-- Tailwind Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -17,33 +16,32 @@
             theme: {
                 extend: {
                     colors: {
-                        // A fun, vibrant color palette
-                        background: "hsl(260 40% 98%)",       // Soft, playful lavender-white
-                        foreground: "hsl(260 50% 15%)",       // Deep plum for readable text
-                        card: "hsl(0 0% 100%)",               // Pure white cards to pop out
-                        "card-foreground": "hsl(260 50% 15%)",
-                        popover: "hsl(0 0% 100%)",
-                        "popover-foreground": "hsl(260 50% 15%)",
+                        // Your custom palette mapped to semantic classes
+                        background: "#E6E094",          // Pale olive / soft gold
+                        foreground: "#2D2D2D",          // Dark charcoal for high contrast text
+                        card: "#235A57",                // Deep teal for standard card elements
+                        "card-foreground": "#E6E094",   // Soft gold text to pop on deep teal
+                        popover: "#235A57",
+                        "popover-foreground": "#E6E094",
 
-                        primary: "hsl(262 80% 50%)",           // Vibrant electric purple
-                        "primary-foreground": "hsl(0 0% 100%)",
+                        primary: "#235A57",              // Deep teal
+                        "primary-foreground": "#E6E094",
 
-                        secondary: "hsl(325 90% 60%)",         // Fun hot pink / magenta
-                        "secondary-foreground": "hsl(0 0% 100%)",
+                        secondary: "#F9DCE1",            // Soft pink / rose accent
+                        "secondary-foreground": "#2D2D2D",
 
-                        muted: "hsl(260 30% 90%)",             // Soft pastel purple-gray
-                        "muted-foreground": "hsl(260 20% 45%)",
+                        muted: "#363636",                // Muted charcoal variant
+                        "muted-foreground": "#E6E094",
 
-                        accent: "hsl(170 80% 40%)",            // Fresh mint / teal for eye-catching bits
-                        "accent-foreground": "hsl(0 0% 100%)",
+                        accent: "#F9DCE1",               // Soft pink for eye-catching highlights
+                        "accent-foreground": "#2D2D2D",
 
-                        border: "hsl(260 30% 88%)",           // Clean, visible borders
+                        border: "#2D2D2D",               // Dark charcoal borders
                     }
                 }
             }
         }
     </script>
-    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <HeadOutlet />
 </head>

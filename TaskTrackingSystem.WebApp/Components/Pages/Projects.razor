@@ -25,12 +25,7 @@
 
     @if (isLoading)
     {
-        <div class="flex items-center justify-center py-20">
-            <div class="flex items-center space-x-3 text-slate-500">
-                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span class="text-sm font-medium">Loading projects...</span>
-            </div>
-        </div>
+        <LoadingSpinner Message="Loading projects..." />
     }
     else
     {
@@ -47,9 +42,9 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @if (projects.Any())
+                    @if (PagedProjects.Any())
                     {
-                        @foreach (var project in projects)
+                        @foreach (var project in PagedProjects)
                         {
                             <tr class="hover:bg-slate-50/50 transition-colors">
                                 <td class="px-6 py-4">
@@ -82,16 +77,18 @@
                     }
                     else
                     {
-                        <tr>
-                            <td colspan="5" class="px-6 py-12 text-center">
-                                <i data-lucide="folder-kanban" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
-                                <p class="text-sm font-medium text-slate-500">No projects yet</p>
-                                <p class="text-xs text-slate-400 mt-1">Create your first project to get started.</p>
-                            </td>
-                        </tr>
+                        <EmptyState ColSpan="5" Icon="folder-kanban" Title="No projects yet" Subtitle="Create your first project to get started." />
                     }
                 </tbody>
             </table>
+
+            <!-- Pagination -->
+            <Pagination CurrentPage="currentPage"
+                        TotalPages="TotalPages"
+                        PageSize="pageSize"
+                        TotalCount="projects.Count"
+                        OnPageChanged="HandlePageChanged"
+                        OnPageSizeChanged="HandlePageSizeChanged" />
         </div>
     }
 </div>
@@ -152,6 +149,15 @@
     private string? errorMessage;
     private List<ProjectDto> projects = new();
 
+    // Pagination state
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    private int TotalPages => (int)Math.Ceiling((double)projects.Count / pageSize);
+
+    private IEnumerable<ProjectDto> PagedProjects =>
+        projects.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
     // Form fields
     private long editingId;
     private string formName = "";
@@ -190,6 +196,18 @@
     private void NavigateToKanban(long projectId)
     {
         Navigation.NavigateTo($"/projects/{projectId}/tasks");
+    }
+
+    // Pagination handlers
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+    }
+
+    private void HandlePageSizeChanged(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
     }
 
     private void OpenCreateModal()
@@ -299,6 +317,8 @@
         {
             await client.DeleteAsync($"Project/{id}");
             await LoadProjects();
+            if (currentPage > TotalPages && TotalPages > 0)
+                currentPage = TotalPages;
         }
         catch (Exception ex)
         {
