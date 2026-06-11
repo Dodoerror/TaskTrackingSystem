@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace TaskTrackingSystem.WebApp.Components;
 
-// Cookie-only auth: reads the signed-in user from HttpContext (set by /account/login).
+// Cookie auth with in-circuit cache so interactive Blazor pages keep the signed-in user.
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -23,12 +22,13 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         var user = _httpContextAccessor.HttpContext?.User;
         if (user?.Identity?.IsAuthenticated == true)
         {
-            var token = user.FindFirst("jwt_token")?.Value;
-            if (!string.IsNullOrEmpty(token))
-            {
-                _sessionState.Token = token;
-            }
+            CacheUser(user);
             return Task.FromResult(new AuthenticationState(user));
+        }
+
+        if (_sessionState.CachedUser?.Identity?.IsAuthenticated == true)
+        {
+            return Task.FromResult(new AuthenticationState(_sessionState.CachedUser));
         }
 
         return Task.FromResult(Anonymous);
@@ -37,5 +37,16 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     public void NotifyUserAuthenticationChanged()
     {
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+    }
+
+    private void CacheUser(ClaimsPrincipal user)
+    {
+        _sessionState.CachedUser = user;
+
+        var token = user.FindFirst("jwt_token")?.Value;
+        if (!string.IsNullOrEmpty(token))
+        {
+            _sessionState.Token = token;
+        }
     }
 }
