@@ -29,6 +29,7 @@ builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Project.ProjectSer
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Task.TaskService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Dashboard.DashboardService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Report.ReportService>();
+builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Menu.MenuService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
@@ -70,7 +71,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("AllowWebApp");
 

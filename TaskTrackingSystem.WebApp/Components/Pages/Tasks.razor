@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
-@inject IHttpClientFactory HttpClientFactory
+@inject ApiClientService ApiClient
 @inject IJSRuntime JS
 
 <PageTitle>Tasks</PageTitle>
@@ -199,11 +199,11 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
-            var tasksTask = client.GetFromJsonAsync<List<TaskDto>>("Task");
-            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project");
+            var tasksTask = client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
+            var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
             await System.Threading.Tasks.Task.WhenAll(tasksTask, projectsTask);
 
             taskList = tasksTask.Result ?? new();
@@ -226,8 +226,8 @@
 
     private async Task LoadTasks()
     {
-        var client = HttpClientFactory.CreateClient("WebApi");
-        taskList = await client.GetFromJsonAsync<List<TaskDto>>("Task") ?? new();
+        var client = ApiClient.CreateClient();
+        taskList = await client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive) ?? new();
     }
 
     // Pagination handlers
@@ -280,18 +280,18 @@
     {
         if (string.IsNullOrWhiteSpace(formTitle))
         {
-            errorMessage = "Task title is required.";
+            errorMessage = ResultMessages.TaskTitleRequired;
             return;
         }
         if (formProjectId == 0)
         {
-            errorMessage = "Please select a project.";
+            errorMessage = ResultMessages.SelectProjectRequired;
             return;
         }
 
         isSaving = true;
         errorMessage = null;
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
 
         try
         {
@@ -308,7 +308,7 @@
                 var response = await client.PutAsJsonAsync($"Task/{editingId}", dto);
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = "Failed to update task.";
+                    errorMessage = ResultMessages.FailedToUpdateTask;
                     return;
                 }
             }
@@ -326,7 +326,7 @@
                 var response = await client.PostAsJsonAsync("Task", dto);
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = "Failed to create task.";
+                    errorMessage = ResultMessages.FailedToCreateTask;
                     return;
                 }
             }
@@ -346,7 +346,7 @@
 
     private async Task DeleteTask(long id)
     {
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
             await client.DeleteAsync($"Task/{id}");

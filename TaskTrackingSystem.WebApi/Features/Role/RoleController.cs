@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Role;
 
@@ -6,6 +7,7 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class RoleController : ControllerBase
     {
         private readonly RoleService _roleService;
@@ -100,6 +102,28 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
             }
             return Ok(result);
+        }
+
+        [HttpGet("{id}/menus")]
+        public async Task<ActionResult<Result<List<string>>>> GetAssignedMenus(long id)
+        {
+            var result = await _roleService.GetAssignedMenusByRoleIdAsync(id);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("{id}/menus")]
+        public async Task<IActionResult> AssignMenus(long id, [FromBody] AssignMenusDto dto)
+        {
+            var result = await _roleService.AssignMenusToRoleAsync(id, dto);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
+            }
+            return Ok();
         }
     }
 }

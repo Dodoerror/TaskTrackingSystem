@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using TaskTrackingSystem.Shared.Models.User;
 using TaskTrackingSystem.WebApi.Features.User;
 
@@ -7,6 +8,7 @@ namespace TaskTrackingSystem.WebApi.Features.User
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class UserController : ControllerBase
     {
         private readonly UserService _userService;

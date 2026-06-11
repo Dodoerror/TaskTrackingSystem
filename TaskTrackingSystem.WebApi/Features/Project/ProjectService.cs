@@ -117,7 +117,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             if (!projectExists)
             {
-                return Result<IEnumerable<UserDto>>.Failure($"Project with ID {projectId} not found.", 404);
+                return Result<IEnumerable<UserDto>>.Failure(ResultMessages.ProjectNotFound(projectId), 404);
             }
 
             var members = await _db.ProjectMembers
@@ -147,12 +147,12 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             if (!projectExists)
             {
-                return Result.Failure($"Project with ID {projectId} not found.", 404);
+                return Result.Failure(ResultMessages.ProjectNotFound(projectId), 404);
             }
 
             if (dto.UserIds == null)
             {
-                return Result.Failure("User IDs cannot be null.", 400);
+                return Result.Failure(ResultMessages.UserIdsCannotBeNull, 400);
             }
 
             // Verify if user IDs are valid and not deleted
@@ -166,7 +166,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 var invalidUserIds = dto.UserIds.Except(validUserIds).ToList();
                 if (invalidUserIds.Any())
                 {
-                    return Result.Failure($"The following user IDs are invalid or deleted: {string.Join(", ", invalidUserIds)}", 400);
+                    return Result.Failure(ResultMessages.InvalidUserIds(string.Join(", ", invalidUserIds)), 400);
                 }
             }
 
@@ -200,7 +200,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             if (!projectExists)
             {
-                return Result.Failure($"Project with ID {projectId} not found.", 404);
+                return Result.Failure(ResultMessages.ProjectNotFound(projectId), 404);
             }
 
             var member = await _db.ProjectMembers
@@ -208,7 +208,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             if (member == null)
             {
-                return Result.Failure($"User with ID {userId} is not a member of project with ID {projectId}.", 404);
+                return Result.Failure(ResultMessages.UserNotProjectMember(userId, projectId), 404);
             }
 
             _db.ProjectMembers.Remove(member);
@@ -222,7 +222,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             var projectExists = await _db.Projects.AnyAsync(p => p.Id == projectId && p.IsDeleted != true);
             if (!projectExists)
             {
-                return Result<IEnumerable<TaskDto>>.Failure($"Project with ID {projectId} not found.", 404);
+                return Result<IEnumerable<TaskDto>>.Failure(ResultMessages.ProjectNotFound(projectId), 404);
             }
 
             var tasks = await _db.Tasks

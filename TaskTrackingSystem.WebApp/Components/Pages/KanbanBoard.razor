@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
-@inject IHttpClientFactory HttpClientFactory
+@inject ApiClientService ApiClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -187,10 +187,10 @@
     private async Task LoadTasks()
     {
         isLoading = true;
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
-            var result = await client.GetFromJsonAsync<Result<List<TaskDto>>>($"Project/{ProjectId}/tasks");
+            var result = await client.GetFromJsonAsync<Result<List<TaskDto>>>($"Project/{ProjectId}/tasks", Serialization.CaseInsensitive);
             if (result?.IsSuccess == true && result.Value != null)
                 tasks = result.Value;
         }
@@ -206,7 +206,7 @@
 
     private async Task MoveTask(long taskId, long newStatusId)
     {
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
             var response = await client.PatchAsync($"Task/{taskId}/status?statusId={newStatusId}", null);
@@ -251,7 +251,7 @@
 
         isSaving = true;
         taskError = null;
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
 
         try
         {

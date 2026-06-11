@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
-@inject IHttpClientFactory HttpClientFactory
+@inject ApiClientService ApiClient
 @inject IJSRuntime JS
 
 <PageTitle>Reports</PageTitle>
@@ -194,10 +194,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
-            projects = await client.GetFromJsonAsync<List<ProjectDto>>("Project") ?? new();
+            projects = await client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive) ?? new();
         }
         catch { }
 
@@ -214,7 +214,7 @@
         isLoadingTasks = true;
         StateHasChanged();
 
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
             var query = "Report/tasks?";
@@ -223,7 +223,7 @@
             if (!string.IsNullOrEmpty(filterStatus)) query += $"status={filterStatus}&";
             if (filterProjectId > 0) query += $"projectId={filterProjectId}&";
 
-            var result = await client.GetFromJsonAsync<Result<List<TaskReportDto>>>(query.TrimEnd('&', '?'));
+            var result = await client.GetFromJsonAsync<Result<List<TaskReportDto>>>(query.TrimEnd('&', '?'), Serialization.CaseInsensitive);
             if (result?.IsSuccess == true && result.Value != null)
                 taskReports = result.Value;
         }
@@ -241,10 +241,10 @@
     private async Task LoadProductivity()
     {
         isLoadingProductivity = true;
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
-            var result = await client.GetFromJsonAsync<Result<List<UserProductivityDto>>>("Report/user-productivity");
+            var result = await client.GetFromJsonAsync<Result<List<UserProductivityDto>>>("Report/user-productivity", Serialization.CaseInsensitive);
             if (result?.IsSuccess == true && result.Value != null)
                 productivityList = result.Value;
         }

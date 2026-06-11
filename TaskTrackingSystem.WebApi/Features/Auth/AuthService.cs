@@ -27,6 +27,7 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
         {
             
             var user = await _db.Users
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => (u.Username == loginDto.UsernameOrEmail || u.Email == loginDto.UsernameOrEmail)
                                            && !u.IsDeleted);
 
@@ -46,13 +47,14 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
             }
 
             
-            var token = GenerateJwtToken(user.Id.ToString(), user.Username, user.Email);
+            var token = GenerateJwtToken(user.Id.ToString(), user.Username, user.Email, user.Role.Name);
 
             return new AuthResponseDto
             {
                 Token = token,
                 Username = user.Username,
-                Email = user.Email
+                Email = user.Email,
+                RoleName = user.Role.Name
             };
         }
 
@@ -95,17 +97,18 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
 
-            var token = GenerateJwtToken(user.Id.ToString(), user.Username, user.Email);
+            var token = GenerateJwtToken(user.Id.ToString(), user.Username, user.Email, defaultRole.Name);
 
             return new AuthResponseDto
             {
                 Token = token,
                 Username = user.Username,
-                Email = user.Email
+                Email = user.Email,
+                RoleName = defaultRole.Name
             };
         }
 
-        private string GenerateJwtToken(string userId, string username, string email)
+        private string GenerateJwtToken(string userId, string username, string email, string roleName)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var keyStr = jwtSettings["Key"] ?? "SUPER_SECRET_KEY_THAT_IS_LONG_ENOUGH_12345";
@@ -116,7 +119,8 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
             {
                 new Claim(ClaimTypes.NameIdentifier, userId),
                 new Claim(ClaimTypes.Name, username),
-                new Claim(ClaimTypes.Email, email)
+                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.Role, roleName)
             };
 
             var token = new JwtSecurityToken(

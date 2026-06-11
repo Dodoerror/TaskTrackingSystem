@@ -1,4 +1,7 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@using TaskTrackingSystem.Shared.Models.Menu
+@using System.Security.Claims
 
 <div class="flex h-screen bg-slate-50 font-sans text-slate-900 antialiased">
     <aside class="flex w-64 flex-col border-r border-slate-200 bg-white">
@@ -7,69 +10,51 @@
             <span class="ml-3 font-semibold text-lg tracking-tight text-slate-900">TaskFlow</span>
         </div>
 
+        <!-- Navigation Links -->
         <nav class="flex-1 space-y-1 px-4 py-6">
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all" href="" Match="NavLinkMatch.All">
-                <i data-lucide="layout-dashboard" class="h-4 w-4 mr-3 text-slate-400"></i>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="" Match="NavLinkMatch.All">
+                <i data-lucide="layout-dashboard" class="h-4 w-4 mr-3 text-slate-500"></i>
                 Dashboard
             </NavLink>
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all" href="projects">
-                <i data-lucide="folder-kanban" class="h-4 w-4 mr-3 text-slate-400"></i>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="projects">
+                <i data-lucide="folder-kanban" class="h-4 w-4 mr-3 text-slate-500"></i>
                 Projects
             </NavLink>
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all" href="tasks">
-                <i data-lucide="check-square" class="h-4 w-4 mr-3 text-slate-400"></i>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="tasks">
+                <i data-lucide="check-square" class="h-4 w-4 mr-3 text-slate-500"></i>
                 Tasks
             </NavLink>
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all" href="users">
-                <i data-lucide="users" class="h-4 w-4 mr-3 text-slate-400"></i>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="users">
+                <i data-lucide="users" class="h-4 w-4 mr-3 text-slate-500"></i>
                 Users
             </NavLink>
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all" href="roles">
-                <i data-lucide="shield-check" class="h-4 w-4 mr-3 text-slate-400"></i>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="roles">
+                <i data-lucide="shield-check" class="h-4 w-4 mr-3 text-slate-500"></i>
                 Roles
             </NavLink>
-
-            <details class="group">
-                <summary class="flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                    <span class="flex items-center">
-                        <i data-lucide="bar-chart-3" class="h-4 w-4 mr-3 text-slate-400"></i>
-                        Reports
-                    </span>
-                    <i data-lucide="chevron-right" class="h-4 w-4 text-slate-400 group-open:rotate-90 transition-transform"></i>
-                </summary>
-                <div class="pl-7 space-y-1 mt-1 border-l-2 border-slate-100 ml-5 transition-all">
-                    <NavLink class="flex items-center rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition-all" href="reports/employees">
-                        <i data-lucide="users" class="h-3.5 w-3.5 mr-2 text-slate-400"></i>
-                        Employee Report
-                    </NavLink>
-                    <NavLink class="flex items-center rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition-all" href="reports/projects">
-                        <i data-lucide="folder-kanban" class="h-3.5 w-3.5 mr-2 text-slate-400"></i>
-                        Project Progress
-                    </NavLink>
-                    <NavLink class="flex items-center rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition-all" href="reports/tasks">
-                        <i data-lucide="check-square" class="h-3.5 w-3.5 mr-2 text-slate-400"></i>
-                        Task Report
-                    </NavLink>
-                </div>
-            </details>
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="reports">
+                <i data-lucide="bar-chart-3" class="h-4 w-4 mr-3 text-slate-500"></i>
+                Reports
+            </NavLink>
         </nav>
 
         <div class="border-t border-slate-100 p-4">
             <AuthorizeView>
                 <Authorized>
-                    <div class="flex items-center rounded-xl p-2 hover:bg-slate-50 cursor-pointer transition-all justify-between group relative">
-                        <div class="flex items-center">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white font-semibold text-sm">
-                                @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
-                            </span>
-                            <div class="ml-3 overflow-hidden max-w-[100px]">
-                                <p class="text-sm font-medium text-slate-900 truncate">@context.User.Identity?.Name</p>
-                                <p class="text-xs text-slate-500 truncate">User Account</p>
-                            </div>
+                    <div class="flex items-center rounded-xl p-2 hover:bg-slate-50 transition-all">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white font-semibold text-sm shrink-0">
+                            @(context.User.Identity?.Name?.Length > 0 ? context.User.Identity.Name[0].ToString().ToUpper() : "U")
+                        </span>
+                        <div class="ml-3 overflow-hidden flex flex-col">
+                            <span class="text-sm font-semibold text-slate-900 truncate max-w-[130px]">@context.User.Identity?.Name</span>
+                            <form method="post" action="/account/logout" class="mt-0.5">
+                                <AntiforgeryToken />
+                                <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-semibold text-left flex items-center gap-1 transition-all">
+                                    <i data-lucide="log-out" class="h-3 w-3"></i>
+                                    Sign Out
+                                </button>
+                            </form>
                         </div>
-                        <button @onclick="Logout" class="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all ml-2" title="Sign Out">
-                            <i data-lucide="log-out" class="h-4 w-4"></i>
-                        </button>
                     </div>
                 </Authorized>
                 <NotAuthorized>
@@ -93,7 +78,35 @@
         </header>
 
         <div class="p-8">
-            @Body
+            @if (isCheckingAuth)
+            {
+                <div class="flex items-center justify-center py-20">
+                    <div class="flex items-center space-x-3 text-slate-500">
+                        <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        <span class="text-sm font-medium">Checking authorization...</span>
+                    </div>
+                </div>
+            }
+            else if (isAuthorizedPage)
+            {
+                @Body
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center py-20 px-4">
+                    <div class="rounded-full bg-rose-50 p-4 text-rose-600 mb-4">
+                        <i data-lucide="shield-alert" class="h-12 w-12"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Access Denied</h3>
+                    <p class="text-slate-500 text-center mt-2 max-w-sm text-sm">
+                        You do not have permission to access this page. Please contact your system administrator.
+                    </p>
+                    <a href="/dashboard" class="mt-6 inline-flex items-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors shadow-sm">
+                        <i data-lucide="arrow-left" class="h-4 w-4 mr-2"></i>
+                        Back to Dashboard
+                    </a>
+                </div>
+            }
         </div>
     </main>
 </div>
@@ -101,14 +114,78 @@
 @code {
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private MenuAuthorizationService MenuAuthorization { get; set; } = default!;
+    [Inject] private Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+
+    private bool isAuthorizedPage;
+    private bool isCheckingAuth = true;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        _ = CheckPageAuthorizationAsync();
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        _ = CheckPageAuthorizationAsync();
+    }
+
+    private async Task CheckPageAuthorizationAsync()
+    {
+        isCheckingAuth = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                if (MenuAuthorizationService.IsPublicRoute(relativePath))
+                {
+                    isAuthorizedPage = true;
+                }
+                else
+                {
+                    var returnPath = new Uri(Navigation.Uri).AbsolutePath;
+                    Navigation.NavigateTo($"/login?ReturnUrl={Uri.EscapeDataString(returnPath)}", forceLoad: true);
+                    return;
+                }
+
+                return;
+            }
+
+            if (MenuAuthorizationService.IsPublicRoute(relativePath))
+            {
+                isAuthorizedPage = true;
+                return;
+            }
+
+            var allowedMenus = await MenuAuthorization.GetUserMenusAsync(user);
+            isAuthorizedPage = MenuAuthorization.IsRouteAllowed(allowedMenus, relativePath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking page auth: {ex.Message}");
+            isAuthorizedPage = false;
+        }
+        finally
+        {
+            isCheckingAuth = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await JS.InvokeVoidAsync("initIcons");
     }
 
-    private void Logout()
+    public void Dispose()
     {
-        Navigation.NavigateTo("/account/logout", forceLoad: true);
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }

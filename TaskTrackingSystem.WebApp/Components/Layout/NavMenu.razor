@@ -1,27 +1,65 @@
-﻿<div class="top-row ps-3 navbar navbar-dark bg-slate-900">
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand text-white" href="">TaskFlow</a>
+        <a class="navbar-brand" href="">TaskTrackingSystem.WebApp</a>
     </div>
 </div>
 
-<div class="nav-scrollable bg-white border-r border-slate-200">
-    <nav class="flex-column p-4">
-        <div class="nav-item px-3 mb-2">
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill me-3" aria-hidden="true"></span> Home
-            </NavLink>
+<nav class="flex-1 space-y-1 px-4 py-6">
+    @if (isLoading)
+    {
+        <div class="flex items-center justify-center py-6 text-slate-400">
+            <svg class="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            <span class="text-xs">Loading menus...</span>
         </div>
+    }
+    else if (menus.Any())
+    {
+        @foreach (var menu in menus)
+        {
+            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                     href="@MenuAuthorizationService.NormalizeMenuHref(menu.MenuUrl)"
+                     Match="@(string.IsNullOrWhiteSpace(menu.MenuUrl) || menu.MenuUrl.Trim('/') is "dashboard" or "" ? NavLinkMatch.All : NavLinkMatch.Prefix)">
+                @if (!string.IsNullOrEmpty(menu.Icon))
+                {
+                    <i data-lucide="@menu.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                }
+                else
+                {
+                    <i data-lucide="circle" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                }
+                <span>@menu.MenuName</span>
+            </NavLink>
+        }
+    }
+    else
+    {
+        <p class="text-xs text-slate-400 text-center py-4">No access to any menus.</p>
+    }
+</nav>
 
-        <div class="nav-item px-3 mb-2">
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all" href="counter">
-                <span class="bi bi-plus-square-fill me-3" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+@code {
+    private List<MenuDto> menus = new();
+    private bool isLoading = true;
 
-        <div class="nav-item px-3 mb-2">
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all" href="weather">
-                <span class="bi bi-list-nested me-3" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                menus = await MenuAuthorization.GetUserMenusAsync(user);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dynamic menus: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

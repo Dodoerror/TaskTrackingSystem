@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.User;
 using TaskTrackingSystem.Shared.Models.Task;
@@ -8,6 +9,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ProjectController : ControllerBase
     {
         private readonly ProjectService _projectService;

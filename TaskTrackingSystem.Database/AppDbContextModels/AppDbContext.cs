@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,6 +36,11 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<TaskHistory> TaskHistories { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<RoleMenu> RoleMenus { get; set; }
+
+    public virtual DbSet<MenuAdmin> MenuAdmins { get; set; }
+    public virtual DbSet<MenuAdminDetail> MenuAdminDetails { get; set; }
 
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -268,6 +273,41 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Users__RoleId__6383C8BA");
+        });
+
+        modelBuilder.Entity<MenuAdmin>(entity =>
+        {
+            entity.HasKey(e => e.AdminMenuId);
+            entity.Property(e => e.AdminMenuId).HasMaxLength(50);
+            entity.Property(e => e.MenuCode).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.ParentCode).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.MenuName).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.MenuUrl).HasMaxLength(200);
+            entity.Property(e => e.Icon).HasMaxLength(50);
+            entity.Property(e => e.CreatedUserId).HasMaxLength(50);
+            entity.Property(e => e.ModifiedUserId).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<MenuAdminDetail>(entity =>
+        {
+            entity.HasKey(e => e.MenuAdminDetailId);
+            entity.Property(e => e.MenuAdminDetailId).HasMaxLength(50);
+            entity.Property(e => e.MenuDetailCode).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.ParentMenuCode).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.ActionName).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.ApiName).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.CreatedUserId).HasMaxLength(50);
+            entity.Property(e => e.ModifiedUserId).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<RoleMenu>(entity =>
+        {
+            entity.HasKey(e => e.RoleMenuId);
+            entity.Property(e => e.RoleMenuId).HasMaxLength(50);
+            entity.Property(e => e.RoleCode).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.MenuCode).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.CreatedUserId).HasMaxLength(50);
+            entity.Property(e => e.ModifiedUserId).HasMaxLength(50);
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -4,23 +4,24 @@
 @code {
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender)
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            if (authState.User.Identity?.IsAuthenticated == true)
-            {
-                return;
-            }
-
-            // Use path only — PathAndQuery would nest /login?ReturnUrl=... inside ReturnUrl and cause loops.
-            var path = new Uri(Navigation.Uri).AbsolutePath;
-            if (path.Equals("/login", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            var returnUrl = Uri.EscapeDataString(path);
-            Navigation.NavigateTo($"/login?ReturnUrl={returnUrl}");
+            return;
         }
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            return;
+        }
+
+        var path = new Uri(Navigation.Uri).AbsolutePath;
+        if (path.Equals("/login", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var returnUrl = Uri.EscapeDataString(path);
+        Navigation.NavigateTo($"/login?ReturnUrl={returnUrl}", forceLoad: true);
     }
 }
