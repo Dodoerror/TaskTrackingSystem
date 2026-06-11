@@ -32,10 +32,18 @@
                 <i data-lucide="shield-check" class="h-4 w-4 mr-3 text-slate-500"></i>
                 Roles
             </NavLink>
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all" href="reports">
-                <i data-lucide="bar-chart-3" class="h-4 w-4 mr-3 text-slate-500"></i>
-                Reports
-            </NavLink>
+            <div class="relative group">
+                <button class="flex items-center w-full rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all focus:outline-none">
+                    <i data-lucide="bar-chart-3" class="h-4 w-4 mr-3 text-slate-500"></i>
+                    Reports
+                    <i data-lucide="chevron-down" class="h-3 w-3 ml-auto text-slate-500"></i>
+                </button>
+                <div class="absolute left-0 mt-1 w-48 bg-white border border-slate-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity">
+                    <NavLink class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" href="reports/tasks">Task Report</NavLink>
+                    <NavLink class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" href="reports/project-progress">Project Progress Report</NavLink>
+                    <NavLink class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" href="reports/employee">Employee Report</NavLink>
+                </div>
+            </div>
         </nav>
 
         <div class="border-t border-slate-100 p-4">
