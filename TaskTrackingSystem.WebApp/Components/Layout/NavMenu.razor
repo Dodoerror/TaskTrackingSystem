@@ -1,37 +1,91 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using TaskTrackingSystem.Shared.Models.Menu
+@implements IDisposable
 @inject AuthenticationStateProvider AuthStateProvider
 @inject MenuAuthorizationService MenuAuthorization
+@inject NavigationManager Navigation
 
 <nav class="flex-1 space-y-1 px-4 py-6">
     @if (menus.Any())
     {
         @foreach (var menu in menus)
         {
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
-                     href="@MenuAuthorizationService.NormalizeMenuHref(menu.MenuUrl)"
-                     Match="@(string.IsNullOrWhiteSpace(menu.MenuUrl) || menu.MenuUrl.Trim('/') is "dashboard" or "" ? NavLinkMatch.All : NavLinkMatch.Prefix)">
-                @if (!string.IsNullOrEmpty(menu.Icon))
-                {
-                    <i data-lucide="@menu.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
-                }
-                else
-                {
-                    <i data-lucide="circle" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
-                }
-                <span>@menu.MenuName</span>
-            </NavLink>
+            @if (menu.SubMenus.Any())
+            {
+                <details class="group space-y-1" open="@IsMenuExpanded(menu.MenuCode, menu.SubMenus)">
+                    <summary class="flex w-full cursor-pointer list-none items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all [&::-webkit-details-marker]:hidden">
+                        <span class="flex items-center">
+                            <i data-lucide="@(string.IsNullOrEmpty(menu.Icon) ? "circle" : menu.Icon)" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                            <span>@menu.MenuName</span>
+                        </span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 shrink-0 transition-transform group-open:rotate-180"></i>
+                    </summary>
+
+                    <div class="ml-7 space-y-1">
+                        @foreach (var sub in menu.SubMenus)
+                        {
+                            <NavLink class="flex items-center rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                                     href="@MenuAuthorizationService.NormalizeMenuHref(sub.MenuUrl)"
+                                     Match="NavLinkMatch.Prefix">
+                                <span>@sub.MenuName</span>
+                            </NavLink>
+                        }
+                    </div>
+                </details>
+            }
+            else
+            {
+                <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                         href="@MenuAuthorizationService.NormalizeMenuHref(menu.MenuUrl)"
+                         Match="@GetNavLinkMatch(menu.MenuUrl)">
+                    @if (!string.IsNullOrEmpty(menu.Icon))
+                    {
+                        <i data-lucide="@menu.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                    }
+                    else
+                    {
+                        <i data-lucide="circle" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                    }
+                    <span>@menu.MenuName</span>
+                </NavLink>
+            }
         }
     }
     else if (showRoleFallback)
     {
         @foreach (var link in fallbackLinks)
         {
-            <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
-                     href="@link.Href" Match="@link.Match">
-                <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
-                <span>@link.Label</span>
-            </NavLink>
+            @if (link.Children is { Count: > 0 })
+            {
+                <details class="group space-y-1" open="@IsFallbackExpanded(link.Children)">
+                    <summary class="flex w-full cursor-pointer list-none items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all [&::-webkit-details-marker]:hidden">
+                        <span class="flex items-center">
+                            <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                            <span>@link.Label</span>
+                        </span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 shrink-0 transition-transform group-open:rotate-180"></i>
+                    </summary>
+
+                    <div class="ml-7 space-y-1">
+                        @foreach (var child in link.Children)
+                        {
+                            <NavLink class="flex items-center rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                                     href="@child.Href"
+                                     Match="@child.Match">
+                                <span>@child.Label</span>
+                            </NavLink>
+                        }
+                    </div>
+                </details>
+            }
+            else
+            {
+                <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                         href="@link.Href" Match="@link.Match">
+                    <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
+                    <span>@link.Label</span>
+                </NavLink>
+            }
         }
     }
 </nav>
@@ -39,10 +93,14 @@
 @code {
     private List<MenuDto> menus = new();
     private bool showRoleFallback;
-    private List<(string Href, string Label, string Icon, NavLinkMatch Match)> fallbackLinks = new();
+    private List<FallbackLink> fallbackLinks = new();
+    private string currentPath = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
+        currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/');
+        Navigation.LocationChanged += OnLocationChanged;
+
         try
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -66,23 +124,71 @@
         }
     }
 
-    private static List<(string Href, string Label, string Icon, NavLinkMatch Match)> BuildFallbackLinks(System.Security.Claims.ClaimsPrincipal user)
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentPath = Navigation.ToBaseRelativePath(e.Location).Trim('/');
+        InvokeAsync(StateHasChanged);
+    }
+
+    private bool IsMenuExpanded(string menuCode, IEnumerable<MenuDto> subMenus)
+    {
+        return subMenus.Any(s =>
+            !string.IsNullOrWhiteSpace(s.MenuUrl) &&
+            currentPath.StartsWith(s.MenuUrl.Trim('/'), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool IsFallbackExpanded(IEnumerable<FallbackLink> children)
+    {
+        return children.Any(c =>
+            currentPath.StartsWith(c.Href.TrimStart('/'), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static NavLinkMatch GetNavLinkMatch(string? menuUrl)
+    {
+        return string.IsNullOrWhiteSpace(menuUrl) || menuUrl.Trim('/') is "dashboard" or ""
+            ? NavLinkMatch.All
+            : NavLinkMatch.Prefix;
+    }
+
+    private static List<FallbackLink> BuildFallbackLinks(System.Security.Claims.ClaimsPrincipal user)
     {
         var role = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Member";
-        var links = new List<(string, string, string, NavLinkMatch)>
+        var links = new List<FallbackLink>
         {
-            ("/dashboard", "Dashboard", "layout-dashboard", NavLinkMatch.All),
-            ("/projects", "Projects", "folder-kanban", NavLinkMatch.Prefix),
-            ("/tasks", "Tasks", "check-square", NavLinkMatch.Prefix)
+            new("/dashboard", "Dashboard", "layout-dashboard", NavLinkMatch.All),
+            new("/projects", "Projects", "folder-kanban", NavLinkMatch.Prefix),
+            new("/tasks", "Tasks", "check-square", NavLinkMatch.Prefix)
         };
 
         if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
-            links.Add(("/reports", "Reports", "bar-chart-3", NavLinkMatch.Prefix));
-            links.Add(("/roles", "Roles", "shield-check", NavLinkMatch.Prefix));
-            links.Add(("/users", "Users", "users", NavLinkMatch.Prefix));
+            links.Add(new FallbackLink(
+                "/reports",
+                "Reports",
+                "bar-chart-3",
+                NavLinkMatch.Prefix,
+                new List<FallbackLink>
+                {
+                    new("/reports/employees", "Employee Report", "users", NavLinkMatch.Prefix),
+                    new("/reports/projects", "Project Progress", "folder-kanban", NavLinkMatch.Prefix),
+                    new("/reports/tasks", "Task Report", "check-square", NavLinkMatch.Prefix)
+                }));
+            links.Add(new("/roles", "Roles", "shield-check", NavLinkMatch.Prefix));
+            links.Add(new("/users", "Users", "users", NavLinkMatch.Prefix));
         }
 
         return links;
     }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private sealed record FallbackLink(
+        string Href,
+        string Label,
+        string Icon,
+        NavLinkMatch Match,
+        List<FallbackLink>? Children = null);
 }

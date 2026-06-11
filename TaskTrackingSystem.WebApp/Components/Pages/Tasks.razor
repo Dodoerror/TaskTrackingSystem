@@ -74,7 +74,7 @@
                                         <button @onclick="() => OpenEditModal(task)" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all" title="Edit">
                                             <i data-lucide="pencil" class="h-4 w-4"></i>
                                         </button>
-                                        <button @onclick="() => DeleteTask(task.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all" title="Delete">
+                                        <button @onclick="() => RequestDeleteConfirmation(task.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all" title="Delete">
                                             <i data-lucide="trash-2" class="h-4 w-4"></i>
                                         </button>
                                     </div>
@@ -164,7 +164,7 @@
             </div>
             <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                 <button @onclick="CloseModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-                <button @onclick="SaveTask" disabled="@isSaving" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors">
+                <button @onclick="RequestSaveConfirmation" disabled="@isSaving" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors">
                     @(isSaving ? "Saving..." : (isEditing ? "Update" : "Create"))
                 </button>
             </div>
@@ -172,12 +172,35 @@
     </div>
 }
 
+@* ===== Confirm Dialog ===== *@
+<ConfirmDialog IsVisible="showConfirmDialog"
+               Title="@confirmTitle"
+               Message="@confirmMessage"
+               ConfirmText="@confirmButtonText"
+               Icon="@confirmIcon"
+               IconBgClass="@confirmIconBg"
+               IconTextClass="@confirmIconText"
+               ButtonClass="@confirmButtonClass"
+               OnConfirm="HandleConfirmAction"
+               OnCancel="CloseConfirmDialog" />
+
 @code {
     private bool isLoading = true;
     private bool showModal = false;
     private bool isEditing = false;
     private bool isSaving = false;
     private string? errorMessage;
+
+    // Confirm dialog state
+    private bool showConfirmDialog = false;
+    private string confirmTitle = "";
+    private string confirmMessage = "";
+    private string confirmButtonText = "";
+    private string confirmIcon = "";
+    private string confirmIconBg = "";
+    private string confirmIconText = "";
+    private string confirmButtonClass = "";
+    private Func<Task>? confirmAction;
     private List<TaskDto> taskList = new();
     private List<ProjectDto> projects = new();
 
@@ -276,6 +299,68 @@
     {
         showModal = false;
         errorMessage = null;
+    }
+
+    private void RequestSaveConfirmation()
+    {
+        if (string.IsNullOrWhiteSpace(formTitle))
+        {
+            errorMessage = ResultMessages.TaskTitleRequired;
+            return;
+        }
+        if (formProjectId == 0)
+        {
+            errorMessage = ResultMessages.SelectProjectRequired;
+            return;
+        }
+
+        if (isEditing)
+        {
+            confirmTitle = "Update Task?";
+            confirmMessage = "Are you sure you want to update this task?";
+            confirmButtonText = "Update";
+            confirmIcon = "pencil";
+            confirmIconBg = "bg-blue-50";
+            confirmIconText = "text-blue-500";
+            confirmButtonClass = "bg-blue-600 hover:bg-blue-700";
+        }
+        else
+        {
+            confirmTitle = "Create Task?";
+            confirmMessage = "Are you sure you want to create this task?";
+            confirmButtonText = "Create";
+            confirmIcon = "plus-circle";
+            confirmIconBg = "bg-emerald-50";
+            confirmIconText = "text-emerald-500";
+            confirmButtonClass = "bg-emerald-600 hover:bg-emerald-700";
+        }
+        confirmAction = SaveTask;
+        showConfirmDialog = true;
+    }
+
+    private void RequestDeleteConfirmation(long id)
+    {
+        confirmTitle = "Delete Task?";
+        confirmMessage = "Are you sure you want to delete this task? This action cannot be undone.";
+        confirmButtonText = "Delete";
+        confirmIcon = "trash-2";
+        confirmIconBg = "bg-red-50";
+        confirmIconText = "text-red-500";
+        confirmButtonClass = "bg-red-600 hover:bg-red-700";
+        confirmAction = () => DeleteTask(id);
+        showConfirmDialog = true;
+    }
+
+    private async Task HandleConfirmAction()
+    {
+        showConfirmDialog = false;
+        if (confirmAction != null)
+            await confirmAction();
+    }
+
+    private void CloseConfirmDialog()
+    {
+        showConfirmDialog = false;
     }
 
     private async Task SaveTask()
