@@ -137,7 +137,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             var userExists = await _db.Users.AnyAsync(u => u.Id == userId && !u.IsDeleted);
             if (!userExists)
             {
-                return Result<IEnumerable<TaskDto>>.Failure($"User with ID {userId} not found.", 404);
+                return Result<IEnumerable<TaskDto>>.Failure(ResultMessages.UserNotFound(userId), 404);
             }
 
             var tasks = await _db.Tasks
@@ -166,7 +166,7 @@ namespace TaskTrackingSystem.WebApi.Features.Task
             var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.IsDeleted != true);
             if (task == null)
             {
-                return Result.Failure($"Task with ID {id} not found.", 404);
+                return Result.Failure(ResultMessages.TaskNotFound(id), 404);
             }
 
             task.StatusId = statusId;

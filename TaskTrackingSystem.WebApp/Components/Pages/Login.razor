@@ -1,6 +1,8 @@
 @page "/login"
 @layout Layout.EmptyLayout
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Sign In — TaskFlow</PageTitle>
 
@@ -34,10 +36,25 @@
                 </div>
             </div>
 
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input id="rememberMe" name="RememberMe" type="checkbox" value="true"
+                           class="h-4 w-4 rounded border-slate-350 text-slate-900 focus:ring-slate-900 focus:outline-none" />
+                    <label for="rememberMe" class="ml-2 block text-sm text-slate-600 font-medium">Remember me</label>
+                </div>
+            </div>
+
             @if (ShowError)
             {
                 <div class="p-3 rounded-lg bg-red-50 border border-red-100">
                     <p class="text-sm text-red-600 text-center">Invalid login credentials.</p>
+                </div>
+            }
+
+            @if (ShowLoggedOutMessage)
+            {
+                <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+                    <p class="text-sm text-emerald-700 text-center">You have been signed out successfully.</p>
                 </div>
             }
 
@@ -57,5 +74,23 @@
     [SupplyParameterFromQuery(Name = "error")]
     private string? Error { get; set; }
 
+    [SupplyParameterFromQuery(Name = "loggedOut")]
+    private string? LoggedOut { get; set; }
+
     private bool ShowError => string.Equals(Error, "invalid", StringComparison.OrdinalIgnoreCase);
+    private bool ShowLoggedOutMessage => string.Equals(LoggedOut, "true", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("/dashboard", forceLoad: true);
+        }
+    }
 }

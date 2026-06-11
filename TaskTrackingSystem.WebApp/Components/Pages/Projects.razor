@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
-@inject IHttpClientFactory HttpClientFactory
+@inject ApiClientService ApiClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -170,10 +170,10 @@
     private async Task LoadProjects()
     {
         isLoading = true;
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
-            projects = await client.GetFromJsonAsync<List<ProjectDto>>("Project") ?? new();
+            projects = await client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive) ?? new();
         }
         catch (Exception ex)
         {
@@ -224,13 +224,13 @@
     {
         if (string.IsNullOrWhiteSpace(formName))
         {
-            errorMessage = "Project name is required.";
+            errorMessage = ResultMessages.ProjectNameRequired;
             return;
         }
 
         isSaving = true;
         errorMessage = null;
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
 
         try
         {
@@ -246,7 +246,7 @@
                 var response = await client.PutAsJsonAsync($"Project/{editingId}", dto);
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = "Failed to update project.";
+                    errorMessage = ResultMessages.FailedToUpdateProject;
                     return;
                 }
             }
@@ -263,7 +263,7 @@
                 var response = await client.PostAsJsonAsync("Project", dto);
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = "Failed to create project.";
+                    errorMessage = ResultMessages.FailedToCreateProject;
                     return;
                 }
             }
@@ -283,7 +283,7 @@
 
     private async Task DeleteProject(long id)
     {
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
             await client.DeleteAsync($"Project/{id}");

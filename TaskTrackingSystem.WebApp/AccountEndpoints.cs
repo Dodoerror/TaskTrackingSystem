@@ -3,7 +3,9 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using TaskTrackingSystem.Shared;
 using TaskTrackingSystem.Shared.Models.Auth;
+using TaskTrackingSystem.WebApp.Components.Partial;
 
 namespace TaskTrackingSystem.WebApp;
 
@@ -14,6 +16,7 @@ public static class AccountEndpoints
         app.MapPost("/account/login", LoginAsync);
         app.MapPost("/account/register", RegisterAsync);
         app.MapGet("/account/logout", (Delegate)LogoutAsync);
+        app.MapPost("/account/logout", (Delegate)LogoutAsync);
     }
 
     private static async Task<IResult> LoginAsync(
@@ -21,6 +24,7 @@ public static class AccountEndpoints
         IHttpClientFactory httpClientFactory,
         [FromForm] string usernameOrEmail,
         [FromForm] string password,
+        [FromForm] bool? rememberMe,
         [FromForm] string? returnUrl)
     {
         if (string.IsNullOrWhiteSpace(usernameOrEmail) || string.IsNullOrWhiteSpace(password))
@@ -40,13 +44,13 @@ public static class AccountEndpoints
             return RedirectToLogin(returnUrl, "invalid");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-        if (result == null || string.IsNullOrWhiteSpace(result.Username))
+        var result = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
+        if (result?.IsSuccess != true || result.Value == null || string.IsNullOrWhiteSpace(result.Value.Username))
         {
             return RedirectToLogin(returnUrl, "invalid");
         }
 
-        await SignInUserAsync(context, result);
+        await SignInUserAsync(context, result.Value, rememberMe ?? false);
         return Results.Redirect(GetSafeReturnUrl(returnUrl));
     }
 
@@ -63,23 +67,24 @@ public static class AccountEndpoints
             return Results.Redirect("/register?error=failed");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-        if (result == null || string.IsNullOrWhiteSpace(result.Username))
+        var result = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
+        if (result?.IsSuccess != true || result.Value == null || string.IsNullOrWhiteSpace(result.Value.Username))
         {
             return Results.Redirect("/register?error=failed");
         }
 
-        await SignInUserAsync(context, result);
+        await SignInUserAsync(context, result.Value, false);
         return Results.Redirect("/dashboard");
     }
 
     private static async Task<IResult> LogoutAsync(HttpContext context)
     {
         await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return Results.Redirect("/login");
+        context.Response.Cookies.Delete(CookieAuthenticationDefaults.AuthenticationScheme);
+        return Results.Redirect("/login?loggedOut=true");
     }
 
-    private static async Task SignInUserAsync(HttpContext context, AuthResponseDto authResult)
+    private static async Task SignInUserAsync(HttpContext context, AuthResponseDto authResult, bool rememberMe)
     {
         var claims = new List<Claim>
         {
@@ -87,11 +92,18 @@ public static class AccountEndpoints
             new(ClaimTypes.Email, authResult.Email)
         };
 
+        if (!string.IsNullOrWhiteSpace(authResult.RoleName))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, authResult.RoleName));
+        }
+
         var userId = TryGetUserIdFromJwt(authResult.Token);
         if (!string.IsNullOrWhiteSpace(userId))
         {
             claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
         }
+
+        claims.Add(new Claim("jwt_token", authResult.Token));
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
@@ -101,8 +113,8 @@ public static class AccountEndpoints
             principal,
             new AuthenticationProperties
             {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+                IsPersistent = rememberMe,
+                ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(7) : DateTimeOffset.UtcNow.AddHours(8)
             });
     }
 

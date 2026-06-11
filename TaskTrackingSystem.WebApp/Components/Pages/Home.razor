@@ -1,9 +1,10 @@
 @page "/"
+@page "/Home"
 @page "/dashboard"
 @using Microsoft.AspNetCore.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
-@inject IHttpClientFactory HttpClientFactory
+@inject ApiClientService ApiClient
 @inject IJSRuntime JS
 
 <PageTitle>Dashboard</PageTitle>
@@ -126,18 +127,18 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
-            var summaryResult = await client.GetFromJsonAsync<Result<DashboardSummaryDto>>("Dashboard/summary");
+            var summaryResult = await client.GetFromJsonAsync<Result<DashboardSummaryDto>>("Dashboard/summary", Serialization.CaseInsensitive);
             if (summaryResult?.IsSuccess == true && summaryResult.Value != null)
                 summary = summaryResult.Value;
 
-            var tasksResult = await client.GetFromJsonAsync<Result<List<TaskStatusOverviewDto>>>("Dashboard/tasks-overview");
+            var tasksResult = await client.GetFromJsonAsync<Result<List<TaskStatusOverviewDto>>>("Dashboard/tasks-overview", Serialization.CaseInsensitive);
             if (tasksResult?.IsSuccess == true && tasksResult.Value != null)
                 taskStatuses = tasksResult.Value;
 
-            var progressResult = await client.GetFromJsonAsync<Result<List<ProjectProgressDto>>>("Dashboard/project-progress");
+            var progressResult = await client.GetFromJsonAsync<Result<List<ProjectProgressDto>>>("Dashboard/project-progress", Serialization.CaseInsensitive);
             if (progressResult?.IsSuccess == true && progressResult.Value != null)
                 projectProgress = progressResult.Value;
         }

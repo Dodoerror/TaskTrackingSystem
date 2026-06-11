@@ -6,13 +6,28 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options => options.DetailedErrors = true);
 
 // Register HttpClient for WebApi calls
-builder.Services.AddHttpClient("WebApi", client =>
+var webApiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://localhost:5018/api/";
+var webApiBuilder = builder.Services.AddHttpClient("WebApi", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5018/api/");
+    client.BaseAddress = new Uri(webApiBaseUrl);
 });
+
+if (builder.Environment.IsDevelopment() &&
+    webApiBaseUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+{
+    webApiBuilder.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback =
+            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    });
+}
+
+builder.Services.AddScoped<UserSessionState>();
+builder.Services.AddScoped<ApiClientService>();
+builder.Services.AddScoped<MenuAuthorizationService>();
 
 // Cookie authentication for Blazor pages and HTTP middleware.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -20,6 +35,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.LoginPath = "/login";
         options.AccessDeniedPath = "/login";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
     });
 builder.Services.AddAuthorization();
 builder.Services.AddAuthorizationCore();

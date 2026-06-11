@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using TaskTrackingSystem.Shared.Models.Permission;
 
 namespace TaskTrackingSystem.WebApi.Features.Permission
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class PermissionController : ControllerBase
     {
         private readonly PermissionService _permissionService;
