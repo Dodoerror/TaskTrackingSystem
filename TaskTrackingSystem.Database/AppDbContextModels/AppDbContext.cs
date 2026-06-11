@@ -277,6 +277,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<MenuAdmin>(entity =>
         {
+            entity.ToTable("AdminMenus");
             entity.HasKey(e => e.AdminMenuId);
             entity.Property(e => e.AdminMenuId).HasMaxLength(50);
             entity.Property(e => e.MenuCode).HasMaxLength(50).IsRequired();
@@ -284,8 +285,10 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.MenuName).HasMaxLength(100).IsRequired();
             entity.Property(e => e.MenuUrl).HasMaxLength(200);
             entity.Property(e => e.Icon).HasMaxLength(50);
-            entity.Property(e => e.CreatedUserId).HasMaxLength(50);
-            entity.Property(e => e.ModifiedUserId).HasMaxLength(50);
+            entity.Ignore(e => e.CreatedUserId);
+            entity.Ignore(e => e.CreatedDateTime);
+            entity.Ignore(e => e.ModifiedUserId);
+            entity.Ignore(e => e.ModifiedDateTime);
         });
 
         modelBuilder.Entity<MenuAdminDetail>(entity =>

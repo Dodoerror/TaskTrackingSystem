@@ -22,7 +22,7 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
         [HttpGet("summary")]
         public async Task<ActionResult<Result<DashboardSummaryDto>>> GetSummary()
         {
-            var result = await _dashboardService.GetSummaryAsync();
+            var result = await _dashboardService.GetSummaryAsync(true);
             return StatusCode(result.StatusCode, result);
         }
 

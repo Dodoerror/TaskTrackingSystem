@@ -7,6 +7,8 @@
 @attribute [Authorize]
 @inject IHttpClientFactory HttpClientFactory
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
 
 <PageTitle>Task Report</PageTitle>
 

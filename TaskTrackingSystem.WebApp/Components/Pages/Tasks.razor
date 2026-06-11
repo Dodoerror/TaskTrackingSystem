@@ -4,6 +4,8 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
 
 <PageTitle>Tasks</PageTitle>
 

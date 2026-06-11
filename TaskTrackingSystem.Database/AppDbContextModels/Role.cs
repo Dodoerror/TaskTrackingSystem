@@ -19,7 +19,7 @@ public partial class Role
 
     public long? UpdatedBy { get; set; }
 
-    public bool? IsDeleted { get; set; }
+    public bool IsDeleted { get; set; }
 
     public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
 
