@@ -10,82 +10,30 @@
     {
         @foreach (var menu in menus)
         {
-            @if (menu.SubMenus.Any())
-            {
-                <details class="group space-y-1" open="@IsMenuExpanded(menu.MenuCode, menu.SubMenus)">
-                    <summary class="flex w-full cursor-pointer list-none items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all [&::-webkit-details-marker]:hidden">
-                        <span class="flex items-center">
-                            <i data-lucide="@(string.IsNullOrEmpty(menu.Icon) ? "circle" : menu.Icon)" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
-                            <span>@menu.MenuName</span>
-                        </span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 shrink-0 transition-transform group-open:rotate-180"></i>
-                    </summary>
-
-                    <div class="ml-7 space-y-1">
-                        @foreach (var sub in menu.SubMenus)
-                        {
-                            <NavLink class="flex items-center rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
-                                     href="@MenuAuthorizationService.NormalizeMenuHref(sub.MenuUrl)"
-                                     Match="NavLinkMatch.Prefix">
-                                <span>@sub.MenuName</span>
-                            </NavLink>
-                        }
-                    </div>
-                </details>
-            }
-            else
-            {
-                <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
-                         href="@MenuAuthorizationService.NormalizeMenuHref(menu.MenuUrl)"
-                         Match="@GetNavLinkMatch(menu.MenuUrl)">
-                    @if (!string.IsNullOrEmpty(menu.Icon))
-                    {
-                        <i data-lucide="@menu.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
-                    }
-                    else
-                    {
-                        <i data-lucide="circle" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
-                    }
-                    <span>@menu.MenuName</span>
-                </NavLink>
-            }
+            <NavLink class="nav-link-item"
+                     href="@MenuAuthorizationService.NormalizeMenuHref(menu.MenuUrl)"
+                     Match="@(string.IsNullOrWhiteSpace(menu.MenuUrl) || menu.MenuUrl.Trim('/') is "dashboard" or "" ? NavLinkMatch.All : NavLinkMatch.Prefix)">
+                @if (!string.IsNullOrEmpty(menu.Icon))
+                {
+                    <i data-lucide="@menu.Icon" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                }
+                else
+                {
+                    <i data-lucide="circle" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                }
+                <span>@menu.MenuName</span>
+            </NavLink>
         }
     }
     else if (showRoleFallback)
     {
         @foreach (var link in fallbackLinks)
         {
-            @if (link.Children is { Count: > 0 })
-            {
-                <details class="group space-y-1" open="@IsFallbackExpanded(link.Children)">
-                    <summary class="flex w-full cursor-pointer list-none items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all [&::-webkit-details-marker]:hidden">
-                        <span class="flex items-center">
-                            <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
-                            <span>@link.Label</span>
-                        </span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 shrink-0 transition-transform group-open:rotate-180"></i>
-                    </summary>
-
-                    <div class="ml-7 space-y-1">
-                        @foreach (var child in link.Children)
-                        {
-                            <NavLink class="flex items-center rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
-                                     href="@child.Href"
-                                     Match="@child.Match">
-                                <span>@child.Label</span>
-                            </NavLink>
-                        }
-                    </div>
-                </details>
-            }
-            else
-            {
-                <NavLink class="flex items-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
-                         href="@link.Href" Match="@link.Match">
-                    <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-500 shrink-0"></i>
-                    <span>@link.Label</span>
-                </NavLink>
-            }
+            <NavLink class="nav-link-item"
+                     href="@link.Href" Match="@link.Match">
+                <i data-lucide="@link.Icon" class="h-4 w-4 mr-3 text-slate-400 shrink-0"></i>
+                <span>@link.Label</span>
+            </NavLink>
         }
     }
 </nav>
@@ -155,9 +103,10 @@
         var role = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Member";
         var links = new List<FallbackLink>
         {
-            new("/dashboard", "Dashboard", "layout-dashboard", NavLinkMatch.All),
-            new("/projects", "Projects", "folder-kanban", NavLinkMatch.Prefix),
-            new("/tasks", "Tasks", "check-square", NavLinkMatch.Prefix)
+            ("/dashboard", "Dashboard", "layout-dashboard", NavLinkMatch.All),
+            ("/projects", "Projects", "folder-kanban", NavLinkMatch.Prefix),
+            ("/tasks", "Tasks", "check-square", NavLinkMatch.Prefix),
+            ("/board", "Board", "kanban", NavLinkMatch.Prefix)
         };
 
         if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))

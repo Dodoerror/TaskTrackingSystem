@@ -1,39 +1,32 @@
-/* Minimalistic clean SaaS navigation styling using root CSS variables */
-
-::deep a.nav-link,
-::deep .nav-link {
-    color: var(--text-muted) !important;
+/* Modern Sidebar Navigation Styles */
+::deep a.nav-link-item {
+    display: flex;
+    align-items: center;
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
     font-weight: 500;
+    color: #4B5563; /* text-slate-600 */
     transition: all 0.2s ease;
+    border-left: 3px solid transparent;
 }
 
-::deep a.nav-link:hover,
-::deep .nav-link:hover {
-    color: var(--text-primary) !important;
-    background-color: var(--status-success-bg) !important;
+::deep a.nav-link-item:hover {
+    background-color: #F9FAFB; /* bg-slate-50 */
+    color: #111827; /* text-slate-900 */
 }
 
-::deep a.active {
-    background-color: var(--status-success-bg) !important;
-    color: var(--brand-primary) !important;
+::deep a.nav-link-item.active {
+    background-color: #F5F3FF !important; /* bg-violet-50 */
+    color: #7C3AED !important; /* text-violet-600 */
+    border-left: 3px solid #7C3AED !important;
     font-weight: 600;
 }
 
-::deep a.active i {
-    color: var(--brand-primary) !important;
+::deep a.nav-link-item.active i {
+    color: #7C3AED !important;
 }
 
-summary {
-    color: var(--text-muted) !important;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-summary:hover {
-    color: var(--text-primary) !important;
-    background-color: var(--status-success-bg) !important;
-}
-
-details[open] summary {
-    color: var(--text-primary) !important;
+::deep a.nav-link-item i {
+    transition: color 0.2s ease;
 }

@@ -1,25 +1,29 @@
 @page "/projects/{ProjectId:long}/tasks"
+@page "/board"
 @using Microsoft.AspNetCore.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthStateProvider
-@inject MenuAuthorizationService MenuAuthorization
 
-<PageTitle>Kanban Board</PageTitle>
+<PageTitle>@(ProjectId > 0 ? $"Project #{ProjectId} Kanban" : "Global Kanban Board")</PageTitle>
 
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-            <button @onclick="GoBack" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
-                <i data-lucide="arrow-left" class="h-5 w-5"></i>
-            </button>
+            @if (ProjectId > 0)
+            {
+                <button @onclick="GoBack" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
+                    <i data-lucide="arrow-left" class="h-5 w-5"></i>
+                </button>
+            }
             <div>
                 <h2 class="text-3xl font-bold tracking-tight text-slate-900">Kanban Board</h2>
-                <p class="text-slate-500 mt-1">Project #@ProjectId — Drag tasks between columns.</p>
+                <p class="text-slate-500 mt-1">@(ProjectId > 0 ? $"Project #{ProjectId} — " : "Global View — ")Drag tasks between columns.</p>
             </div>
         </div>
         <button @onclick="OpenCreateTaskModal" class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors shadow-sm">
@@ -55,12 +59,17 @@
                     </div>
 
                     <!-- Cards -->
-                    <div class="flex-1 p-3 space-y-3 overflow-y-auto">
+                    <div class="flex-1 p-3 space-y-3 overflow-y-auto"
+                         @ondrop="() => HandleDrop(column.StatusId)"
+                         @ondragover="HandleDragOver"
+                         @ondragover:preventDefault="true">
                         @if (tasksInColumn.Any())
                         {
                             @foreach (var task in tasksInColumn)
                             {
-                                <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+                                <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                                     draggable="true" 
+                                     @ondragstart="() => HandleDragStart(task)">
                                     <div class="flex items-start justify-between">
                                         <h4 class="text-sm font-semibold text-slate-900">@task.Title</h4>
                                         <span class="text-xs px-2 py-0.5 rounded-full font-medium @GetPriorityBadge(task.PriorityId)">@GetPriorityLabel(task.PriorityId)</span>
@@ -71,28 +80,14 @@
                                     }
                                     <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
                                         <span class="text-xs text-slate-400">Due @task.DueDate.ToString("MMM dd")</span>
-                                        <div class="flex items-center space-x-1">
-                                            @if (column.StatusId > 1)
-                                            {
-                                                <button @onclick="() => MoveTask(task.Id, column.StatusId - 1)" class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all" title="Move Left">
-                                                    <i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>
-                                                </button>
-                                            }
-                                            @if (column.StatusId < 3)
-                                            {
-                                                <button @onclick="() => MoveTask(task.Id, column.StatusId + 1)" class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all" title="Move Right">
-                                                    <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
-                                                </button>
-                                            }
-                                        </div>
                                     </div>
                                 </div>
                             }
                         }
                         else
                         {
-                            <div class="flex items-center justify-center py-8">
-                                <p class="text-xs text-slate-400">No tasks</p>
+                            <div class="flex items-center justify-center py-8 h-full">
+                                <p class="text-xs text-slate-400">Drop tasks here</p>
                             </div>
                         }
                     </div>
@@ -170,6 +165,8 @@
     [Parameter] public long ProjectId { get; set; }
 
     private bool isLoading = true;
+    private bool isAdmin = false;
+    private long currentUserId = 0;
     private bool showTaskModal = false;
     private bool isSaving = false;
     private string? taskError;
@@ -199,6 +196,27 @@
         new(3, "Done", "bg-emerald-500")
     };
 
+    private TaskDto? draggedTask;
+
+    private void HandleDragStart(TaskDto task)
+    {
+        draggedTask = task;
+    }
+
+    private void HandleDragOver()
+    {
+        // Allow dropping
+    }
+
+    private async Task HandleDrop(long newStatusId)
+    {
+        if (draggedTask != null && draggedTask.StatusId != newStatusId)
+        {
+            await MoveTask(draggedTask.Id, newStatusId);
+        }
+        draggedTask = null;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await LoadTasks();
@@ -215,9 +233,29 @@
         var client = ApiClient.CreateClient();
         try
         {
-            var result = await client.GetFromJsonAsync<Result<List<TaskDto>>>($"Project/{ProjectId}/tasks", Serialization.CaseInsensitive);
-            if (result?.IsSuccess == true && result.Value != null)
-                tasks = result.Value;
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            isAdmin = user.IsInRole("Admin");
+            var idStr = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (idStr != null) long.TryParse(idStr, out currentUserId);
+
+            List<TaskDto> allTasks = new();
+            if (ProjectId > 0)
+            {
+                var result = await client.GetFromJsonAsync<Result<List<TaskDto>>>($"Project/{ProjectId}/tasks", Serialization.CaseInsensitive);
+                if (result?.IsSuccess == true && result.Value != null)
+                    allTasks = result.Value;
+            }
+            else
+            {
+                var result = await client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
+                if (result != null) allTasks = result;
+            }
+
+            // Filter for non-admins
+            tasks = (!isAdmin && currentUserId > 0)
+                ? allTasks.Where(t => t.AssignedTo == currentUserId).ToList()
+                : allTasks;
         }
         catch (Exception ex)
         {
@@ -315,7 +353,7 @@
             {
                 Title = taskTitle,
                 Description = taskDescription,
-                ProjectId = ProjectId,
+                ProjectId = ProjectId > 0 ? ProjectId : 1, // Default fallback if global board
                 StatusId = 1,
                 PriorityId = taskPriorityId,
                 DueDate = taskDueDate

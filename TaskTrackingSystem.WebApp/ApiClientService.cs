@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace TaskTrackingSystem.WebApp;
 
@@ -14,14 +15,24 @@ public class ApiClientService
     private readonly UserSessionState _sessionState;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
+    /// <summary>The base URL of the WebApi (without trailing /api/). Used for direct file download links.</summary>
+    public string BaseUrl { get; }
+
     public ApiClientService(
         IHttpClientFactory factory,
         UserSessionState sessionState,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IConfiguration configuration)
     {
         _factory = factory;
         _sessionState = sessionState;
         _httpContextAccessor = httpContextAccessor;
+
+        // Strip trailing /api/ so components can build their own paths
+        var rawUrl = configuration["WebApi:BaseUrl"] ?? "http://localhost:5018/api/";
+        BaseUrl = rawUrl.TrimEnd('/').EndsWith("/api", StringComparison.OrdinalIgnoreCase)
+            ? rawUrl.TrimEnd('/')[..^4]   // remove trailing /api
+            : rawUrl.TrimEnd('/');
     }
 
     public HttpClient CreateClient()

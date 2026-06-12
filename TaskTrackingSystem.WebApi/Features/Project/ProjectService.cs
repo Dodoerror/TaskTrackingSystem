@@ -55,8 +55,13 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             };
         }
 
-        public async Task<ProjectDto> CreateProjectAsync(CreateProjectDto dto, long? currentUserId = null)
+        public async Task<Result<ProjectDto>> CreateProjectAsync(CreateProjectDto dto, long? currentUserId = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Name))
+            {
+                return Result<ProjectDto>.Failure(ResultMessages.ProjectNameRequired, 400);
+            }
+
             var project = new TaskTrackingSystem.Database.AppDbContextModels.Project
             {
                 Name = dto.Name,
@@ -72,7 +77,7 @@ namespace TaskTrackingSystem.WebApi.Features.Project
             _db.Projects.Add(project);
             await _db.SaveChangesAsync();
 
-            return new ProjectDto
+            var resultDto = new ProjectDto
             {
                 Id = project.Id,
                 Name = project.Name,
@@ -82,12 +87,19 @@ namespace TaskTrackingSystem.WebApi.Features.Project
                 CreatedById = project.CreatedById,
                 CreatedAt = project.CreatedAt ?? DateTime.UtcNow
             };
+
+            return Result<ProjectDto>.Success(resultDto, 201);
         }
 
-        public async Task<bool> UpdateProjectAsync(long id, UpdateProjectDto dto, long? currentUserId = null)
+        public async Task<Result> UpdateProjectAsync(long id, UpdateProjectDto dto, long? currentUserId = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Name))
+            {
+                return Result.Failure(ResultMessages.ProjectNameRequired, 400);
+            }
+
             var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted != true);
-            if (project == null) return false;
+            if (project == null) return Result.Failure(ResultMessages.ProjectNotFound(id), 404);
 
             project.Name = dto.Name;
             project.Description = dto.Description;
@@ -98,18 +110,18 @@ namespace TaskTrackingSystem.WebApi.Features.Project
 
             _db.Projects.Update(project);
             await _db.SaveChangesAsync();
-            return true;
+            return Result.Success(200);
         }
 
-        public async Task<bool> SoftDeleteProjectAsync(long id)
+        public async Task<Result> SoftDeleteProjectAsync(long id)
         {
             var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted != true);
-            if (project == null) return false;
+            if (project == null) return Result.Failure(ResultMessages.ProjectNotFound(id), 404);
 
             project.IsDeleted = true;
             _db.Projects.Update(project);
             await _db.SaveChangesAsync();
-            return true;
+            return Result.Success(200);
         }
 
         public async Task<Result<IEnumerable<UserDto>>> GetProjectMembersAsync(long projectId)

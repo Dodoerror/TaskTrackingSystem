@@ -38,50 +38,26 @@ namespace TaskTrackingSystem.WebApi.Features.Task
         }
 
         [HttpPost]
-        public async Task<ActionResult<TaskDto>> CreateTask([FromBody] CreateTaskDto createTaskDto)
+        public async Task<ActionResult<Result<TaskDto>>> CreateTask([FromBody] CreateTaskDto createTaskDto)
         {
-            try
-            {
-                long? currentUserId = null;
-                var createdTask = await _taskService.CreateTaskAsync(createTaskDto, currentUserId);
-                return CreatedAtAction(nameof(GetTask), new { id = createdTask.Id }, createdTask);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            long? currentUserId = null;
+            var result = await _taskService.CreateTaskAsync(createTaskDto, currentUserId);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTask(long id, [FromBody] UpdateTaskDto updateTaskDto)
+        public async Task<ActionResult<Result>> UpdateTask(long id, [FromBody] UpdateTaskDto updateTaskDto)
         {
-            try
-            {
-                long? currentUserId = null;
-                var success = await _taskService.UpdateTaskAsync(id, updateTaskDto, currentUserId);
-                if (!success)
-                {
-                    return NotFound(new { message = $"Task with ID {id} not found." });
-                }
-
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            long? currentUserId = null;
+            var result = await _taskService.UpdateTaskAsync(id, updateTaskDto, currentUserId);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTask(long id)
+        public async Task<ActionResult<Result>> DeleteTask(long id)
         {
-            var success = await _taskService.SoftDeleteTaskAsync(id);
-            if (!success)
-            {
-                return NotFound(new { message = $"Task with ID {id} not found or already deleted." });
-            }
-
-            return NoContent();
+            var result = await _taskService.SoftDeleteTaskAsync(id);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("/api/User/{userId}/tasks")]

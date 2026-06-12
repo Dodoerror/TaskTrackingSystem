@@ -1,5 +1,6 @@
 @page "/reports"
 @using Microsoft.AspNetCore.Authorization
+@using TaskTrackingSystem.Shared.Models.Report
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ApiClientService ApiClient
@@ -9,190 +10,367 @@
 
 <PageTitle>Reports</PageTitle>
 
-<div class="space-y-8">
+<div class="space-y-6">
     <!-- Page Header -->
     <div>
         <h2 class="text-3xl font-bold tracking-tight text-slate-900">Reports</h2>
-        <p class="text-slate-500 mt-1">Analytics, task reports, and user productivity.</p>
+        <p class="text-slate-500 mt-1">Task summaries, team productivity, and overdue/critical task insights.</p>
     </div>
 
-    <!-- Task Report Section -->
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100">
-            <h3 class="font-semibold text-lg text-slate-900">Task Report</h3>
-        </div>
+    <!-- Report Tabs -->
+    <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl border border-slate-200 w-fit">
+        <button @onclick='() => SwitchTab("status")' class="px-4 py-2 rounded-lg text-sm font-semibold transition-all @(activeTab == "status" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+            <i data-lucide="bar-chart-2" class="h-4 w-4 inline mr-1.5"></i>Task Status Summary
+        </button>
+        <button @onclick='() => SwitchTab("productivity")' class="px-4 py-2 rounded-lg text-sm font-semibold transition-all @(activeTab == "productivity" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+            <i data-lucide="users" class="h-4 w-4 inline mr-1.5"></i>Team Productivity
+        </button>
+        <button @onclick='() => SwitchTab("overdue")' class="px-4 py-2 rounded-lg text-sm font-semibold transition-all @(activeTab == "overdue" ? "bg-white text-red-700 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+            <i data-lucide="alert-triangle" class="h-4 w-4 inline mr-1.5"></i>Overdue & Critical
+        </button>
+    </div>
 
-        <!-- Filters -->
-        <div class="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
-            <div class="flex flex-wrap items-end gap-4">
+    <!-- ═══ TAB 1: Task Status Summary ═══════════════════════════════════════════ -->
+    @if (activeTab == "status")
+    {
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white">
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">Start Date</label>
-                    <input @bind="filterStartDate" type="date" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
+                    <h3 class="font-bold text-slate-900">Task Status Summary Report</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Overview of all tasks grouped by status, priority, and assignment.</p>
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">End Date</label>
-                    <input @bind="filterEndDate" type="date" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">Status</label>
-                    <select @bind="filterStatus" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
-                        <option value="">All</option>
-                        <option value="1">To Do</option>
-                        <option value="2">In Progress</option>
-                        <option value="3">Done</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">Project</label>
-                    <select @bind="filterProjectId" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
-                        <option value="0">All Projects</option>
-                        @foreach (var p in projects)
-                        {
-                            <option value="@p.Id">@p.Name</option>
-                        }
-                    </select>
-                </div>
-                <button @onclick="LoadTaskReport" class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors">
-                    <i data-lucide="search" class="h-3.5 w-3.5 mr-1.5"></i>
-                    Search
-                </button>
+                <a href="@GetExcelUrl("task-status-summary")" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors shadow-sm">
+                    <i data-lucide="download" class="h-4 w-4 mr-2"></i>
+                    Export Excel
+                </a>
             </div>
-        </div>
 
-        <!-- Task Report Table -->
-        <div class="overflow-x-auto">
-            @if (isLoadingTasks)
-            {
-                <div class="flex items-center justify-center py-12">
-                    <svg class="animate-spin h-5 w-5 text-slate-400" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            <!-- Filters -->
+            <div class="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+                <div class="flex flex-wrap items-end gap-3">
+                    <div class="flex-1 min-w-[180px]">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Search</label>
+                        <input @bind="s1Search" @onkeyup="HandleS1KeyUp" type="text"
+                               placeholder="Task, project, assignee..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
+                    </div>
+                    <div class="w-36">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Status</label>
+                        <select @bind="s1StatusId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                            <option value="0">All Statuses</option>
+                            <option value="1">To Do</option>
+                            <option value="2">In Progress</option>
+                            <option value="3">Done</option>
+                        </select>
+                    </div>
+                    <div class="w-40">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Project</label>
+                        <select @bind="s1ProjectId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                            <option value="0">All Projects</option>
+                            @foreach (var p in projects)
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <button @onclick="LoadStatusReport" class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm">
+                        <i data-lucide="search" class="h-4 w-4 mr-1.5"></i>Search
+                    </button>
                 </div>
+            </div>
+
+            @if (isLoadingS1)
+            {
+                <div class="flex justify-center py-12"><LoadingSpinner Message="Loading..." /></div>
             }
             else
             {
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-slate-100 bg-slate-50/60">
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned To</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @if (taskReports.Any())
-                        {
-                            @foreach (var t in taskReports)
-                            {
-                                <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="px-6 py-3 text-sm font-medium text-slate-900">@t.Title</td>
-                                    <td class="px-6 py-3 text-sm text-slate-500">@t.ProjectName</td>
-                                    <td class="px-6 py-3">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(t.StatusId)">@t.StatusName</span>
-                                    </td>
-                                    <td class="px-6 py-3">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(t.PriorityId)">@t.PriorityName</span>
-                                    </td>
-                                    <td class="px-6 py-3 text-sm text-slate-500">@(t.AssignedToUser ?? "Unassigned")</td>
-                                    <td class="px-6 py-3 text-sm text-slate-500">@t.DueDate.ToString("MMM dd, yyyy")</td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="6" class="px-6 py-12 text-center">
-                                    <i data-lucide="file-search" class="h-10 w-10 mx-auto text-slate-300 mb-3"></i>
-                                    <p class="text-sm text-slate-400">No tasks found. Adjust filters and try again.</p>
-                                </td>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50/60">
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned To</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Overdue</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @if (PagedS1.Any())
+                            {
+                                @foreach (var item in PagedS1)
+                                {
+                                    <tr class="hover:bg-slate-50/50 transition-colors">
+                                        <td class="px-6 py-3 text-xs text-slate-400 font-mono">#@item.TaskId</td>
+                                        <td class="px-6 py-3 text-sm font-medium text-slate-900">@item.Title</td>
+                                        <td class="px-6 py-3 text-sm text-slate-500">@item.ProjectName</td>
+                                        <td class="px-6 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(item.StatusName)">@item.StatusName</span></td>
+                                        <td class="px-6 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(item.PriorityName)">@item.PriorityName</span></td>
+                                        <td class="px-6 py-3 text-sm text-slate-500">@(item.AssignedTo ?? "Unassigned")</td>
+                                        <td class="px-6 py-3 text-sm text-slate-500">@item.DueDate.ToString("MMM dd, yyyy")</td>
+                                        <td class="px-6 py-3">
+                                            @if (item.IsOverdue)
+                                            {
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Yes</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">No</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <EmptyState ColSpan="8" Icon="file-search" Title="No data found" Subtitle="Adjust your filters and search again." />
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <Pagination CurrentPage="s1Page" TotalPages="S1TotalPages" PageSize="s1PageSize"
+                            TotalCount="statusSummaryList.Count" OnPageChanged="p => s1Page = p" OnPageSizeChanged="s => { s1PageSize = s; s1Page = 1; }" />
             }
         </div>
-    </div>
+    }
 
-    <!-- User Productivity Section -->
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100">
-            <h3 class="font-semibold text-lg text-slate-900">User Productivity</h3>
-        </div>
-
-        @if (isLoadingProductivity)
-        {
-            <div class="flex items-center justify-center py-12">
-                <svg class="animate-spin h-5 w-5 text-slate-400" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+    <!-- ═══ TAB 2: Team Productivity ════════════════════════════════════════════ -->
+    @if (activeTab == "productivity")
+    {
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-white">
+                <div>
+                    <h3 class="font-bold text-slate-900">Team Productivity & Workload Report</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Task completion rates and workload distribution per team member.</p>
+                </div>
+                <a href="@GetExcelUrl("team-productivity")" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors shadow-sm">
+                    <i data-lucide="download" class="h-4 w-4 mr-2"></i>
+                    Export Excel
+                </a>
             </div>
-        }
-        else
-        {
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b border-slate-100 bg-slate-50/60">
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Assigned</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Efficiency</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @if (productivityList.Any())
-                    {
-                        @foreach (var u in productivityList)
-                        {
-                            <tr class="hover:bg-slate-50/50 transition-colors">
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center space-x-3">
-                                        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-semibold text-xs">
-                                            @(u.FullName.Length > 0 ? u.FullName[0].ToString().ToUpper() : "U")
-                                        </span>
-                                        <div>
-                                            <p class="text-sm font-semibold text-slate-900">@u.FullName</p>
-                                            <p class="text-xs text-slate-400">@@@u.Username</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-sm font-medium text-slate-900">@u.TotalAssignedTasks</td>
-                                <td class="px-6 py-4 text-sm font-medium text-emerald-600">@u.CompletedTasksCount</td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden max-w-[120px]">
-                                            <div class="h-full rounded-full bg-slate-900 transition-all" style="width: @(Math.Min(u.EfficiencyRatio, 100))%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium text-slate-700">@u.EfficiencyRatio.ToString("F0")%</span>
-                                    </div>
-                                </td>
+
+            <!-- Filters -->
+            <div class="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+                <div class="flex items-end gap-3">
+                    <div class="flex-1 max-w-xs">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Search member</label>
+                        <input @bind="s2Search" @onkeyup="HandleS2KeyUp" type="text"
+                               placeholder="Name or username..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all" />
+                    </div>
+                    <button @onclick="LoadProductivityReport" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors shadow-sm">
+                        <i data-lucide="search" class="h-4 w-4 mr-1.5"></i>Search
+                    </button>
+                </div>
+            </div>
+
+            @if (isLoadingS2)
+            {
+                <div class="flex justify-center py-12"><LoadingSpinner Message="Loading..." /></div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50/60">
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Member</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Done</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">In Progress</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">To Do</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Overdue</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completion</th>
                             </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="4" class="px-6 py-12 text-center">
-                                <p class="text-sm text-slate-400">No productivity data available.</p>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-    </div>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @if (PagedS2.Any())
+                            {
+                                @foreach (var item in PagedS2)
+                                {
+                                    <tr class="hover:bg-slate-50/50 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center space-x-3">
+                                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs">
+                                                    @(item.FullName.Length > 0 ? item.FullName[0].ToString().ToUpper() : "U")
+                                                </span>
+                                                <div>
+                                                    <p class="text-sm font-semibold text-slate-900">@item.FullName</p>
+                                                    <p class="text-xs text-slate-400">@@@item.Username</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm font-semibold text-slate-700">@item.TotalAssigned</td>
+                                        <td class="px-6 py-4 text-sm font-semibold text-emerald-600">@item.Completed</td>
+                                        <td class="px-6 py-4 text-sm font-semibold text-blue-600">@item.InProgress</td>
+                                        <td class="px-6 py-4 text-sm font-semibold text-slate-500">@item.ToDo</td>
+                                        <td class="px-6 py-4">
+                                            @if (item.Overdue > 0)
+                                            {
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">@item.Overdue</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-sm text-slate-400">0</span>
+                                            }
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden max-w-[100px]">
+                                                    <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: @(Math.Min(item.CompletionRate, 100))%"></div>
+                                                </div>
+                                                <span class="text-sm font-semibold text-slate-700">@item.CompletionRate.ToString("F0")%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <EmptyState ColSpan="7" Icon="users" Title="No members found" Subtitle="Adjust your search and try again." />
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <Pagination CurrentPage="s2Page" TotalPages="S2TotalPages" PageSize="s2PageSize"
+                            TotalCount="productivityList.Count" OnPageChanged="p => s2Page = p" OnPageSizeChanged="s => { s2PageSize = s; s2Page = 1; }" />
+            }
+        </div>
+    }
+
+    <!-- ═══ TAB 3: Overdue & Critical ══════════════════════════════════════════ -->
+    @if (activeTab == "overdue")
+    {
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-red-50 to-white">
+                <div>
+                    <h3 class="font-bold text-slate-900">Overdue & Critical Tasks Report</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Tasks that are past due date or marked as High priority and not completed.</p>
+                </div>
+                <a href="@GetExcelUrl("overdue-critical")" class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors shadow-sm">
+                    <i data-lucide="download" class="h-4 w-4 mr-2"></i>
+                    Export Excel
+                </a>
+            </div>
+
+            <!-- Filters -->
+            <div class="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+                <div class="flex flex-wrap items-end gap-3">
+                    <div class="flex-1 min-w-[180px]">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Search</label>
+                        <input @bind="s3Search" @onkeyup="HandleS3KeyUp" type="text"
+                               placeholder="Task or project name..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all" />
+                    </div>
+                    <div class="w-40">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Project</label>
+                        <select @bind="s3ProjectId" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all">
+                            <option value="0">All Projects</option>
+                            @foreach (var p in projects)
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <button @onclick="LoadOverdueReport" class="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors shadow-sm">
+                        <i data-lucide="search" class="h-4 w-4 mr-1.5"></i>Search
+                    </button>
+                </div>
+            </div>
+
+            @if (isLoadingS3)
+            {
+                <div class="flex justify-center py-12"><LoadingSpinner Message="Loading..." /></div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50/60">
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned To</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Days Overdue</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @if (PagedS3.Any())
+                            {
+                                @foreach (var item in PagedS3)
+                                {
+                                    <tr class="hover:bg-red-50/30 transition-colors @(item.DaysOverdue > 0 ? "bg-red-50/20" : "")">
+                                        <td class="px-6 py-3 text-xs text-slate-400 font-mono">#@item.TaskId</td>
+                                        <td class="px-6 py-3 text-sm font-medium text-slate-900">@item.Title</td>
+                                        <td class="px-6 py-3 text-sm text-slate-500">@item.ProjectName</td>
+                                        <td class="px-6 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(item.StatusName)">@item.StatusName</span></td>
+                                        <td class="px-6 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(item.PriorityName)">@item.PriorityName</span></td>
+                                        <td class="px-6 py-3 text-sm text-slate-500">@(item.AssignedTo ?? "Unassigned")</td>
+                                        <td class="px-6 py-3 text-sm text-slate-500">@item.DueDate.ToString("MMM dd, yyyy")</td>
+                                        <td class="px-6 py-3">
+                                            @if (item.DaysOverdue > 0)
+                                            {
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                                                    <i data-lucide="clock" class="h-3 w-3 mr-1"></i>@item.DaysOverdue days
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-xs text-amber-600 font-medium">Critical</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <EmptyState ColSpan="8" Icon="check-circle" Title="No overdue or critical tasks!" Subtitle="All tasks are on track. Great work!" />
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <Pagination CurrentPage="s3Page" TotalPages="S3TotalPages" PageSize="s3PageSize"
+                            TotalCount="overdueList.Count" OnPageChanged="p => s3Page = p" OnPageSizeChanged="s => { s3PageSize = s; s3Page = 1; }" />
+            }
+        </div>
+    }
 </div>
 
 @code {
-    private bool isLoadingTasks = true;
-    private bool isLoadingProductivity = true;
-    private List<TaskReportDto> taskReports = new();
-    private List<UserProductivityDto> productivityList = new();
+    private string activeTab = "status";
     private List<ProjectDto> projects = new();
 
-    // Filters
-    private DateTime? filterStartDate;
-    private DateTime? filterEndDate;
-    private string? filterStatus;
-    private int filterProjectId;
+    // ─── Report 1: Task Status Summary ───────────────────────────────────────────
+    private bool isLoadingS1 = false;
+    private List<TaskStatusSummaryDto> statusSummaryList = new();
+    private string s1Search = "";
+    private long s1StatusId = 0;
+    private long s1ProjectId = 0;
+    private int s1Page = 1, s1PageSize = 10;
+    private int S1TotalPages => (int)Math.Ceiling((double)statusSummaryList.Count / s1PageSize);
+    private IEnumerable<TaskStatusSummaryDto> PagedS1 => statusSummaryList.Skip((s1Page - 1) * s1PageSize).Take(s1PageSize);
+
+    // ─── Report 2: Team Productivity ─────────────────────────────────────────────
+    private bool isLoadingS2 = false;
+    private List<TeamProductivityReportDto> productivityList = new();
+    private string s2Search = "";
+    private int s2Page = 1, s2PageSize = 10;
+    private int S2TotalPages => (int)Math.Ceiling((double)productivityList.Count / s2PageSize);
+    private IEnumerable<TeamProductivityReportDto> PagedS2 => productivityList.Skip((s2Page - 1) * s2PageSize).Take(s2PageSize);
+
+    // ─── Report 3: Overdue & Critical ────────────────────────────────────────────
+    private bool isLoadingS3 = false;
+    private List<OverdueCriticalTaskDto> overdueList = new();
+    private string s3Search = "";
+    private long s3ProjectId = 0;
+    private int s3Page = 1, s3PageSize = 10;
+    private int S3TotalPages => (int)Math.Ceiling((double)overdueList.Count / s3PageSize);
+    private IEnumerable<OverdueCriticalTaskDto> PagedS3 => overdueList.Skip((s3Page - 1) * s3PageSize).Take(s3PageSize);
 
     protected override async Task OnInitializedAsync()
     {
@@ -202,8 +380,7 @@
             projects = await client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive) ?? new();
         }
         catch { }
-
-        await System.Threading.Tasks.Task.WhenAll(LoadTaskReport(), LoadProductivity());
+        await LoadStatusReport();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -211,68 +388,114 @@
         await JS.InvokeVoidAsync("initIcons");
     }
 
-    private async Task LoadTaskReport()
+    private async Task SwitchTab(string tab)
     {
-        isLoadingTasks = true;
-        StateHasChanged();
-
-        var client = ApiClient.CreateClient();
-        try
-        {
-            var query = "Report/tasks?";
-            if (filterStartDate.HasValue) query += $"startDate={filterStartDate:yyyy-MM-dd}&";
-            if (filterEndDate.HasValue) query += $"endDate={filterEndDate:yyyy-MM-dd}&";
-            if (!string.IsNullOrEmpty(filterStatus)) query += $"status={filterStatus}&";
-            if (filterProjectId > 0) query += $"projectId={filterProjectId}&";
-
-            var result = await client.GetFromJsonAsync<Result<List<TaskReportDto>>>(query.TrimEnd('&', '?'), Serialization.CaseInsensitive);
-            if (result?.IsSuccess == true && result.Value != null)
-                taskReports = result.Value;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Task report error: {ex.Message}");
-        }
-        finally
-        {
-            isLoadingTasks = false;
-            StateHasChanged();
-        }
+        activeTab = tab;
+        if (tab == "status" && !statusSummaryList.Any()) await LoadStatusReport();
+        if (tab == "productivity" && !productivityList.Any()) await LoadProductivityReport();
+        if (tab == "overdue" && !overdueList.Any()) await LoadOverdueReport();
     }
 
-    private async Task LoadProductivity()
+    private async Task LoadStatusReport()
     {
-        isLoadingProductivity = true;
+        isLoadingS1 = true;
+        s1Page = 1;
+        StateHasChanged();
         var client = ApiClient.CreateClient();
         try
         {
-            var result = await client.GetFromJsonAsync<Result<List<UserProductivityDto>>>("Report/user-productivity", Serialization.CaseInsensitive);
+            var q = $"Report/task-status-summary?search={Uri.EscapeDataString(s1Search ?? "")}&statusId={s1StatusId}&projectId={s1ProjectId}";
+            var result = await client.GetFromJsonAsync<Result<List<TaskStatusSummaryDto>>>(q, Serialization.CaseInsensitive);
+            if (result?.IsSuccess == true && result.Value != null)
+                statusSummaryList = result.Value;
+        }
+        catch (Exception ex) { Console.WriteLine($"Status summary error: {ex.Message}"); }
+        finally { isLoadingS1 = false; StateHasChanged(); }
+    }
+
+    private async Task LoadProductivityReport()
+    {
+        isLoadingS2 = true;
+        s2Page = 1;
+        StateHasChanged();
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var q = $"Report/team-productivity?search={Uri.EscapeDataString(s2Search ?? "")}";
+            var result = await client.GetFromJsonAsync<Result<List<TeamProductivityReportDto>>>(q, Serialization.CaseInsensitive);
             if (result?.IsSuccess == true && result.Value != null)
                 productivityList = result.Value;
         }
-        catch (Exception ex)
+        catch (Exception ex) { Console.WriteLine($"Productivity error: {ex.Message}"); }
+        finally { isLoadingS2 = false; StateHasChanged(); }
+    }
+
+    private async Task LoadOverdueReport()
+    {
+        isLoadingS3 = true;
+        s3Page = 1;
+        StateHasChanged();
+        var client = ApiClient.CreateClient();
+        try
         {
-            Console.WriteLine($"Productivity error: {ex.Message}");
+            var q = $"Report/overdue-critical?search={Uri.EscapeDataString(s3Search ?? "")}&projectId={s3ProjectId}";
+            var result = await client.GetFromJsonAsync<Result<List<OverdueCriticalTaskDto>>>(q, Serialization.CaseInsensitive);
+            if (result?.IsSuccess == true && result.Value != null)
+                overdueList = result.Value;
         }
-        finally
+        catch (Exception ex) { Console.WriteLine($"Overdue report error: {ex.Message}"); }
+        finally { isLoadingS3 = false; StateHasChanged(); }
+    }
+
+    private string GetExcelUrl(string reportType)
+    {
+        var baseUrl = ApiClient.BaseUrl.TrimEnd('/');
+        return reportType switch
         {
-            isLoadingProductivity = false;
+            "task-status-summary" => $"{baseUrl}/api/Report/task-status-summary/excel?search={Uri.EscapeDataString(s1Search ?? "")}&statusId={s1StatusId}&projectId={s1ProjectId}",
+            "team-productivity" => $"{baseUrl}/api/Report/team-productivity/excel?search={Uri.EscapeDataString(s2Search ?? "")}",
+            "overdue-critical" => $"{baseUrl}/api/Report/overdue-critical/excel?search={Uri.EscapeDataString(s3Search ?? "")}&projectId={s3ProjectId}",
+            _ => "#"
+        };
+    }
+
+    private string GetStatusBadge(string statusName) => statusName switch
+    {
+        "To Do" => "bg-slate-100 text-slate-700",
+        "In Progress" => "bg-blue-100 text-blue-700",
+        "Done" => "bg-emerald-100 text-emerald-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+
+    private string GetPriorityBadge(string priorityName) => priorityName switch
+    {
+        "Low" => "bg-slate-100 text-slate-600",
+        "Medium" => "bg-amber-100 text-amber-700",
+        "High" => "bg-red-100 text-red-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+
+    private async Task HandleS1KeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await LoadStatusReport();
         }
     }
 
-    private string GetStatusBadge(long statusId) => statusId switch
+    private async Task HandleS2KeyUp(KeyboardEventArgs e)
     {
-        1 => "bg-slate-100 text-slate-700",
-        2 => "bg-blue-100 text-blue-700",
-        3 => "bg-emerald-100 text-emerald-700",
-        _ => "bg-slate-100 text-slate-600"
-    };
+        if (e.Key == "Enter")
+        {
+            await LoadProductivityReport();
+        }
+    }
 
-    private string GetPriorityBadge(long priorityId) => priorityId switch
+    private async Task HandleS3KeyUp(KeyboardEventArgs e)
     {
-        1 => "bg-slate-100 text-slate-600",
-        2 => "bg-amber-100 text-amber-700",
-        3 => "bg-red-100 text-red-700",
-        _ => "bg-slate-100 text-slate-600"
-    };
+        if (e.Key == "Enter")
+        {
+            await LoadOverdueReport();
+        }
+    }
 }

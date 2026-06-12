@@ -36,50 +36,26 @@ namespace TaskTrackingSystem.WebApi.Features.Role
         }
 
         [HttpPost]
-        public async Task<ActionResult<RoleDto>> CreateRole([FromBody] CreateRoleDto createRoleDto)
+        public async Task<ActionResult<Result<RoleDto>>> CreateRole([FromBody] CreateRoleDto createRoleDto)
         {
-            try
-            {
-                long? currentUserId = null;
-                var createdRole = await _roleService.CreateRoleAsync(createRoleDto, currentUserId);
-                return CreatedAtAction(nameof(GetRole), new { id = createdRole.Id }, createdRole);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            long? currentUserId = null;
+            var result = await _roleService.CreateRoleAsync(createRoleDto, currentUserId);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateRole(long id, [FromBody] UpdateRoleDto updateRoleDto)
+        public async Task<ActionResult<Result>> UpdateRole(long id, [FromBody] UpdateRoleDto updateRoleDto)
         {
-            try
-            {
-                long? currentUserId = null;
-                var success = await _roleService.UpdateRoleAsync(id, updateRoleDto, currentUserId);
-                if (!success)
-                {
-                    return NotFound(new { message = $"Role with ID {id} not found." });
-                }
-
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            long? currentUserId = null;
+            var result = await _roleService.UpdateRoleAsync(id, updateRoleDto, currentUserId);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteRole(long id)
+        public async Task<ActionResult<Result>> DeleteRole(long id)
         {
-            var success = await _roleService.SoftDeleteRoleAsync(id);
-            if (!success)
-            {
-                return NotFound(new { message = $"Role with ID {id} not found or already deleted." });
-            }
-
-            return NoContent();
+            var result = await _roleService.SoftDeleteRoleAsync(id);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpPost("{id}/permissions")]

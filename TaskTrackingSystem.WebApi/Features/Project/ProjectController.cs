@@ -38,50 +38,26 @@ namespace TaskTrackingSystem.WebApi.Features.Project
         }
 
         [HttpPost]
-        public async Task<ActionResult<ProjectDto>> CreateProject([FromBody] CreateProjectDto createProjectDto)
+        public async Task<ActionResult<Result<ProjectDto>>> CreateProject([FromBody] CreateProjectDto createProjectDto)
         {
-            try
-            {
-                long? currentUserId = null;
-                var createdProject = await _projectService.CreateProjectAsync(createProjectDto, currentUserId);
-                return CreatedAtAction(nameof(GetProject), new { id = createdProject.Id }, createdProject);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            long? currentUserId = null;
+            var result = await _projectService.CreateProjectAsync(createProjectDto, currentUserId);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProject(long id, [FromBody] UpdateProjectDto updateProjectDto)
+        public async Task<ActionResult<Result>> UpdateProject(long id, [FromBody] UpdateProjectDto updateProjectDto)
         {
-            try
-            {
-                long? currentUserId = null;
-                var success = await _projectService.UpdateProjectAsync(id, updateProjectDto, currentUserId);
-                if (!success)
-                {
-                    return NotFound(new { message = $"Project with ID {id} not found." });
-                }
-
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            long? currentUserId = null;
+            var result = await _projectService.UpdateProjectAsync(id, updateProjectDto, currentUserId);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProject(long id)
+        public async Task<ActionResult<Result>> DeleteProject(long id)
         {
-            var success = await _projectService.SoftDeleteProjectAsync(id);
-            if (!success)
-            {
-                return NotFound(new { message = $"Project with ID {id} not found or already deleted." });
-            }
-
-            return NoContent();
+            var result = await _projectService.SoftDeleteProjectAsync(id);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("{id}/members")]

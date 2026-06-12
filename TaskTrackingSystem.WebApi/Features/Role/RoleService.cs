@@ -47,12 +47,17 @@ namespace TaskTrackingSystem.WebApi.Features.Role
             };
         }
 
-        public async Task<RoleDto> CreateRoleAsync(CreateRoleDto dto, long? currentUserId = null)
+        public async Task<Result<RoleDto>> CreateRoleAsync(CreateRoleDto dto, long? currentUserId = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Name))
+            {
+                return Result<RoleDto>.Failure(ResultMessages.RoleNameRequired, 400);
+            }
+
             var nameExists = await _db.Roles.AnyAsync(r => r.Name == dto.Name && r.IsDeleted != true);
             if (nameExists)
             {
-                throw new InvalidOperationException("Role name is already taken.");
+                return Result<RoleDto>.Failure("Role name is already taken.", 400);
             }
 
             var role = new TaskTrackingSystem.Database.AppDbContextModels.Role
@@ -84,24 +89,31 @@ namespace TaskTrackingSystem.WebApi.Features.Role
                 await _db.SaveChangesAsync();
             }
 
-            return new RoleDto
+            var resultDto = new RoleDto
             {
                 Id = role.Id,
                 Name = role.Name,
                 Description = role.Description,
-                CreatedAt = (DateTime)role.CreatedAt
+                CreatedAt = role.CreatedAt ?? DateTime.UtcNow
             };
+
+            return Result<RoleDto>.Success(resultDto, 201);
         }
 
-        public async Task<bool> UpdateRoleAsync(long id, UpdateRoleDto dto, long? currentUserId = null)
+        public async Task<Result> UpdateRoleAsync(long id, UpdateRoleDto dto, long? currentUserId = null)
         {
+            if (string.IsNullOrWhiteSpace(dto.Name))
+            {
+                return Result.Failure(ResultMessages.RoleNameRequired, 400);
+            }
+
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == id && r.IsDeleted != true);
-            if (role == null) return false;
+            if (role == null) return Result.Failure(ResultMessages.RoleNotFound(id), 404);
 
             var nameExists = await _db.Roles.AnyAsync(r => r.Name == dto.Name && r.Id != id && r.IsDeleted != true);
             if (nameExists)
             {
-                throw new InvalidOperationException("Role name is already taken by another role.");
+                return Result.Failure("Role name is already taken by another role.", 400);
             }
 
             role.Name = dto.Name;
@@ -111,18 +123,18 @@ namespace TaskTrackingSystem.WebApi.Features.Role
 
             _db.Roles.Update(role);
             await _db.SaveChangesAsync();
-            return true;
+            return Result.Success(200);
         }
 
-        public async Task<bool> SoftDeleteRoleAsync(long id)
+        public async Task<Result> SoftDeleteRoleAsync(long id)
         {
             var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == id && r.IsDeleted != true);
-            if (role == null) return false;
+            if (role == null) return Result.Failure(ResultMessages.RoleNotFound(id), 404);
 
             role.IsDeleted = true;
             _db.Roles.Update(role);
             await _db.SaveChangesAsync();
-            return true;
+            return Result.Success(200);
         }
 
         public async Task<Result> AssignPermissionsToRoleAsync(long roleId, AssignPermissionsDto dto)
