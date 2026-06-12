@@ -47,6 +47,68 @@
     }
     else
     {
+        <!-- Tasks Table -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50/60">
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Title</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @if (PagedTasks.Any())
+                    {
+                        @foreach (var task in PagedTasks)
+                        {
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <span class="text-sm font-semibold text-slate-900">@task.Title</span>
+                                    @if (!string.IsNullOrEmpty(task.Description))
+                                    {
+                                        <p class="text-xs text-slate-400 mt-0.5 truncate max-w-xs">@task.Description</p>
+                                    }
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @GetStatusBadge(task.StatusId)">
+                                        @GetStatusLabel(task.StatusId)
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @GetPriorityBadge(task.PriorityId)">
+                                        @GetPriorityLabel(task.PriorityId)
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-600">@task.DueDate.ToString("MMM dd, yyyy")</td>
+                                <td class="px-6 py-4 text-sm text-slate-500">
+                                    @{ var proj = projects.FirstOrDefault(p => p.Id == task.ProjectId); }
+                                    @(proj?.Name ?? $"#{task.ProjectId}")
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex items-center justify-end space-x-2">
+                                        <button @onclick="() => OpenEditModal(task)" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all" title="Edit">
+                                            <i data-lucide="pencil" class="h-4 w-4"></i>
+                                        </button>
+                                        <button @onclick="() => RequestDeleteConfirmation(task.Id)" class="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all" title="Delete">
+                                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <EmptyState ColSpan="6" Icon="check-square" Title="No tasks yet" Subtitle="Create your first task to get started." />
+                    }
+                </tbody>
+            </table>
+    else
+    {
         <!-- Search and Filters Panel -->
         <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div class="flex flex-wrap items-center gap-4">

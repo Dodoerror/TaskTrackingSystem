@@ -107,7 +107,12 @@ public static class DataSeeder
             new MenuAdmin { AdminMenuId = "M003", MenuCode = "Tasks", ParentCode = "0", MenuName = "Tasks", MenuUrl = "tasks", Visible = true, OrderNo = 3, Icon = "list-todo", DelFlag = 0, CreatedDateTime = DateTime.UtcNow },
             new MenuAdmin { AdminMenuId = "M004", MenuCode = "Reports", ParentCode = "0", MenuName = "Reports", MenuUrl = "reports", Visible = true, OrderNo = 4, Icon = "bar-chart-2", DelFlag = 0, CreatedDateTime = DateTime.UtcNow },
             new MenuAdmin { AdminMenuId = "M005", MenuCode = "Roles", ParentCode = "0", MenuName = "Roles", MenuUrl = "roles", Visible = true, OrderNo = 5, Icon = "shield", DelFlag = 0, CreatedDateTime = DateTime.UtcNow },
-            new MenuAdmin { AdminMenuId = "M006", MenuCode = "Users", ParentCode = "0", MenuName = "Users", MenuUrl = "users", Visible = true, OrderNo = 6, Icon = "users", DelFlag = 0, CreatedDateTime = DateTime.UtcNow }
+            new MenuAdmin { AdminMenuId = "M006", MenuCode = "Users", ParentCode = "0", MenuName = "Users", MenuUrl = "users", Visible = true, OrderNo = 6, Icon = "users", DelFlag = 0, CreatedDateTime = DateTime.UtcNow },
+
+            // Reports sub-menus
+            new MenuAdmin { AdminMenuId = "M007", MenuCode = "Reports_Employees", ParentCode = "Reports", MenuName = "Employee Report", MenuUrl = "reports/employees", Visible = true, OrderNo = 1, Icon = "users", DelFlag = 0, CreatedDateTime = DateTime.UtcNow },
+            new MenuAdmin { AdminMenuId = "M008", MenuCode = "Reports_Projects", ParentCode = "Reports", MenuName = "Project Progress", MenuUrl = "reports/projects", Visible = true, OrderNo = 2, Icon = "folder-kanban", DelFlag = 0, CreatedDateTime = DateTime.UtcNow },
+            new MenuAdmin { AdminMenuId = "M009", MenuCode = "Reports_Tasks", ParentCode = "Reports", MenuName = "Task Report", MenuUrl = "reports/tasks", Visible = true, OrderNo = 3, Icon = "check-square", DelFlag = 0, CreatedDateTime = DateTime.UtcNow }
         };
 
         foreach (var menu in menusToSeed)
@@ -168,6 +173,9 @@ public static class DataSeeder
         roleMenusToSeed.Add(new RoleMenu { RoleMenuId = "RM004", RoleCode = "Admin", MenuCode = "Reports", DelFlag = 0, CreatedDateTime = DateTime.UtcNow });
         roleMenusToSeed.Add(new RoleMenu { RoleMenuId = "RM005", RoleCode = "Admin", MenuCode = "Roles", DelFlag = 0, CreatedDateTime = DateTime.UtcNow });
         roleMenusToSeed.Add(new RoleMenu { RoleMenuId = "RM006", RoleCode = "Admin", MenuCode = "Users", DelFlag = 0, CreatedDateTime = DateTime.UtcNow });
+        roleMenusToSeed.Add(new RoleMenu { RoleMenuId = "RM010", RoleCode = "Admin", MenuCode = "Reports_Employees", DelFlag = 0, CreatedDateTime = DateTime.UtcNow });
+        roleMenusToSeed.Add(new RoleMenu { RoleMenuId = "RM011", RoleCode = "Admin", MenuCode = "Reports_Projects", DelFlag = 0, CreatedDateTime = DateTime.UtcNow });
+        roleMenusToSeed.Add(new RoleMenu { RoleMenuId = "RM012", RoleCode = "Admin", MenuCode = "Reports_Tasks", DelFlag = 0, CreatedDateTime = DateTime.UtcNow });
 
         // Admin role action permissions:
         roleMenusToSeed.Add(new RoleMenu { RoleMenuId = "RMA001", RoleCode = "Admin", MenuCode = "Projects_List", DelFlag = 0, CreatedDateTime = DateTime.UtcNow });
