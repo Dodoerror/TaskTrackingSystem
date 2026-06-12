@@ -72,8 +72,9 @@ namespace TaskTrackingSystem.WebApi.Features.Auth
                 throw new InvalidOperationException("Email is already registered.");
             }
 
-            // Find default Role (e.g. Standard User / Member role, or fallback to lowest ID)
-            var defaultRole = await _db.Roles.FirstOrDefaultAsync(r => r.IsDeleted != true);
+            // Find default Role (Employee role, or fallback to lowest ID)
+            var defaultRole = await _db.Roles.FirstOrDefaultAsync(r => r.Name == "Employee" && r.IsDeleted != true)
+                              ?? await _db.Roles.FirstOrDefaultAsync(r => r.IsDeleted != true);
             if (defaultRole == null)
             {
                 throw new InvalidOperationException("No system roles configured. Registration failed.");

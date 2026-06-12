@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using TaskTrackingSystem.Shared.Models.Task
 @using TaskTrackingSystem.Shared.Models.Project
+@using TaskTrackingSystem.Shared.Models.Role
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
 @inject ApiClientService ApiClient
@@ -135,7 +136,16 @@
                                    class="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all" />
                             <i data-lucide="search" class="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400"></i>
                         </div>
-                        <div class="text-xs font-semibold text-slate-600">
+                        <div class="w-40 shrink-0">
+                            <select @bind="selectedRoleId" class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all">
+                                <option value="0">All Roles</option>
+                                @foreach (var r in roles)
+                                {
+                                    <option value="@r.Id">@r.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="text-xs font-semibold text-slate-600 shrink-0">
                             Selected: <span class="text-violet-700 font-bold">@(TargetAssigneeId.HasValue ? allUsers.FirstOrDefault(u => u.Id == TargetAssigneeId)?.Username ?? "Selected" : "Unassigned")</span>
                         </div>
                     </div>
@@ -208,8 +218,10 @@
     private List<TaskDto> tasks = new();
     private List<ProjectDto> projects = new();
     private List<UserDto> allUsers = new();
+    private List<RoleDto> roles = new();
 
     private long selectedProjectId = 0;
+    private long selectedRoleId = 0;
     private string taskSearch = "";
     private string userSearch = "";
 
@@ -224,11 +236,13 @@
             var tasksTask = client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
             var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
             var usersTask = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
-            await Task.WhenAll(tasksTask, projectsTask, usersTask);
+            var rolesTask = client.GetFromJsonAsync<List<RoleDto>>("Role", Serialization.CaseInsensitive);
+            await Task.WhenAll(tasksTask, projectsTask, usersTask, rolesTask);
 
             tasks = tasksTask.Result ?? new();
             projects = projectsTask.Result ?? new();
             allUsers = usersTask.Result ?? new();
+            roles = rolesTask.Result ?? new();
         }
         catch (Exception ex)
         {
@@ -263,11 +277,23 @@
         }
     }
 
-    private IEnumerable<UserDto> FilteredUsers =>
-        string.IsNullOrWhiteSpace(userSearch)
-            ? allUsers
-            : allUsers.Where(u => $"{u.FirstName} {u.LastName}".Contains(userSearch, StringComparison.OrdinalIgnoreCase)
-                || u.Username.Contains(userSearch, StringComparison.OrdinalIgnoreCase));
+    private IEnumerable<UserDto> FilteredUsers
+    {
+        get
+        {
+            var result = allUsers.Where(u => u.IsActive);
+            if (selectedRoleId > 0)
+            {
+                result = result.Where(u => u.RoleId == selectedRoleId);
+            }
+            if (!string.IsNullOrWhiteSpace(userSearch))
+            {
+                result = result.Where(u => $"{u.FirstName} {u.LastName}".Contains(userSearch, StringComparison.OrdinalIgnoreCase)
+                    || u.Username.Contains(userSearch, StringComparison.OrdinalIgnoreCase));
+            }
+            return result;
+        }
+    }
 
     private void OnTaskSearchInput(ChangeEventArgs e)
     {
