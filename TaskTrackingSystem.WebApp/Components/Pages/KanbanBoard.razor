@@ -6,8 +6,8 @@
 @inject ApiClientService ApiClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
-@using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
 
 <PageTitle>@(ProjectId > 0 ? $"Project #{ProjectId} Kanban" : "Global Kanban Board")</PageTitle>
 
@@ -141,13 +141,25 @@
             </div>
             <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                 <button @onclick="CloseTaskModal" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-                <button @onclick="CreateTask" disabled="@isSaving" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors">
+                <button @onclick="RequestCreateConfirmation" disabled="@isSaving" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors">
                     @(isSaving ? "Creating..." : "Create Task")
                 </button>
             </div>
         </div>
     </div>
 }
+
+@* ===== Confirm Dialog ===== *@
+<ConfirmDialog IsVisible="showConfirmDialog"
+               Title="@confirmTitle"
+               Message="@confirmMessage"
+               ConfirmText="@confirmButtonText"
+               Icon="@confirmIcon"
+               IconBgClass="@confirmIconBg"
+               IconTextClass="@confirmIconText"
+               ButtonClass="@confirmButtonClass"
+               OnConfirm="HandleConfirmAction"
+               OnCancel="CloseConfirmDialog" />
 
 @code {
     [Parameter] public long ProjectId { get; set; }
@@ -158,6 +170,17 @@
     private bool showTaskModal = false;
     private bool isSaving = false;
     private string? taskError;
+
+    // Confirm dialog state
+    private bool showConfirmDialog = false;
+    private string confirmTitle = "";
+    private string confirmMessage = "";
+    private string confirmButtonText = "";
+    private string confirmIcon = "";
+    private string confirmIconBg = "";
+    private string confirmIconText = "";
+    private string confirmButtonClass = "";
+    private Func<Task>? confirmAction;
     private List<TaskDto> tasks = new();
 
     // Task form
@@ -279,6 +302,37 @@
     {
         showTaskModal = false;
         taskError = null;
+    }
+
+    private void RequestCreateConfirmation()
+    {
+        if (string.IsNullOrWhiteSpace(taskTitle))
+        {
+            taskError = "Task title is required.";
+            return;
+        }
+
+        confirmTitle = "Create Task?";
+        confirmMessage = "Are you sure you want to create this task?";
+        confirmButtonText = "Create";
+        confirmIcon = "plus-circle";
+        confirmIconBg = "bg-emerald-50";
+        confirmIconText = "text-emerald-500";
+        confirmButtonClass = "bg-emerald-600 hover:bg-emerald-700";
+        confirmAction = CreateTask;
+        showConfirmDialog = true;
+    }
+
+    private async Task HandleConfirmAction()
+    {
+        showConfirmDialog = false;
+        if (confirmAction != null)
+            await confirmAction();
+    }
+
+    private void CloseConfirmDialog()
+    {
+        showConfirmDialog = false;
     }
 
     private async Task CreateTask()

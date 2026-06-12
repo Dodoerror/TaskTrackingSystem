@@ -62,19 +62,57 @@ public static class AccountEndpoints
         var client = httpClientFactory.CreateClient("WebApi");
         var response = await client.PostAsJsonAsync("Auth/register", registerDto);
 
-        if (!response.IsSuccessStatusCode)
+        string errorMessage = ResultMessages.RegistrationFailed;
+
+        if (response.IsSuccessStatusCode)
         {
-            return Results.Redirect("/register?error=failed");
+            var result = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
+            if (result?.IsSuccess == true && result.Value != null && !string.IsNullOrWhiteSpace(result.Value.Username))
+            {
+                await SignInUserAsync(context, result.Value, false);
+                return Results.Redirect("/dashboard");
+            }
+            else if (result != null && !string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        else
+        {
+            try
+            {
+                var result = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
+                if (result != null && !string.IsNullOrEmpty(result.ErrorMessage))
+                {
+                    errorMessage = result.ErrorMessage;
+                }
+                else
+                {
+                    var errorObj = await response.Content.ReadFromJsonAsync<JsonElement>();
+                    if (errorObj.ValueKind == JsonValueKind.Object && errorObj.TryGetProperty("errors", out var errorsProp))
+                    {
+                        var errorsList = new List<string>();
+                        foreach (var prop in errorsProp.EnumerateObject())
+                        {
+                            foreach (var val in prop.Value.EnumerateArray())
+                            {
+                                errorsList.Add(val.GetString() ?? "");
+                            }
+                        }
+                        if (errorsList.Count > 0)
+                        {
+                            errorMessage = string.Join(" ", errorsList);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback to default
+            }
         }
 
-        var result = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
-        if (result?.IsSuccess != true || result.Value == null || string.IsNullOrWhiteSpace(result.Value.Username))
-        {
-            return Results.Redirect("/register?error=failed");
-        }
-
-        await SignInUserAsync(context, result.Value, false);
-        return Results.Redirect("/dashboard");
+        return Results.Redirect($"/register?error={Uri.EscapeDataString(errorMessage)}");
     }
 
     private static async Task<IResult> LogoutAsync(HttpContext context)

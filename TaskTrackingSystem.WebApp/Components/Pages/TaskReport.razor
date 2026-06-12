@@ -7,6 +7,8 @@
 @attribute [Authorize]
 @inject IHttpClientFactory HttpClientFactory
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject MenuAuthorizationService MenuAuthorization
 
 <PageTitle>Task Report</PageTitle>
 
@@ -67,15 +69,50 @@
                     <option value="3">Done</option>
                 </select>
             </div>
-            <div>
+            <div class="relative min-w-[240px]">
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">Project</label>
-                <select @bind="filterProjectId" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
-                    <option value="0">All Projects</option>
-                    @foreach (var p in projects)
+                <div class="relative">
+                    <input @bind="projectSearchQuery"
+                           @bind:event="oninput"
+                           @bind:after="OnProjectSearchChanged"
+                           @onfocus="ShowProjectSuggestions"
+                           @onblur="HideProjectSuggestionsDelayed"
+                           type="text"
+                           placeholder="Search projects..."
+                           autocomplete="off"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
+                    @if (filterProjectId > 0 || !string.IsNullOrWhiteSpace(projectSearchQuery))
                     {
-                        <option value="@p.Id">@p.Name</option>
+                        <button type="button"
+                                @onmousedown="ClearProjectFilter"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                title="Clear project filter">
+                            <i data-lucide="x" class="h-4 w-4"></i>
+                        </button>
                     }
-                </select>
+                </div>
+                @if (showProjectSuggestions && FilteredProjects.Any())
+                {
+                    <ul class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                        <li>
+                            <button type="button"
+                                    @onmousedown="ClearProjectFilter"
+                                    class="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                                All Projects
+                            </button>
+                        </li>
+                        @foreach (var p in FilteredProjects.Take(10))
+                        {
+                            <li>
+                                <button type="button"
+                                        @onmousedown="() => SelectProject(p)"
+                                        class="w-full px-3 py-2 text-left text-sm text-slate-900 hover:bg-slate-50 transition-colors @(filterProjectId == p.Id ? "bg-slate-50 font-medium" : "")">
+                                    @p.Name
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
             </div>
             <button @onclick="LoadTaskReport" class="inline-flex items-center rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors shadow-sm">
                 <i data-lucide="search" class="h-4 w-4 mr-2"></i> Search
@@ -255,6 +292,8 @@
     private DateTime? filterEndDate;
     private string? filterStatus;
     private int filterProjectId;
+    private string projectSearchQuery = string.Empty;
+    private bool showProjectSuggestions;
 
     protected override async Task OnInitializedAsync()
     {
@@ -273,9 +312,51 @@
         await JS.InvokeVoidAsync("initIcons");
     }
 
+    private IEnumerable<ProjectDto> FilteredProjects =>
+        string.IsNullOrWhiteSpace(projectSearchQuery)
+            ? projects
+            : projects.Where(p => p.Name.Contains(projectSearchQuery.Trim(), StringComparison.OrdinalIgnoreCase));
+
     private void SetView(bool chartView)
     {
         isChartView = chartView;
+    }
+
+    private void OnProjectSearchChanged()
+    {
+        var selected = projects.FirstOrDefault(p => p.Id == filterProjectId);
+        if (selected == null || !selected.Name.Equals(projectSearchQuery, StringComparison.OrdinalIgnoreCase))
+        {
+            filterProjectId = 0;
+        }
+
+        showProjectSuggestions = true;
+    }
+
+    private void ShowProjectSuggestions()
+    {
+        showProjectSuggestions = true;
+    }
+
+    private async Task HideProjectSuggestionsDelayed()
+    {
+        await Task.Delay(150);
+        showProjectSuggestions = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void SelectProject(ProjectDto project)
+    {
+        filterProjectId = (int)project.Id; 
+        projectSearchQuery = project.Name;
+        showProjectSuggestions = false;
+    }
+
+    private void ClearProjectFilter()
+    {
+        filterProjectId = 0;
+        projectSearchQuery = string.Empty;
+        showProjectSuggestions = false;
     }
 
     private void ApplyPeriodPreset()

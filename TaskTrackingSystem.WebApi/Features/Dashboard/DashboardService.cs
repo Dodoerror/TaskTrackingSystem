@@ -17,9 +17,9 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             _db = db;
         }
 
-        public async Task<Result<DashboardSummaryDto>> GetSummaryAsync()
+        public async Task<Result<DashboardSummaryDto>> GetSummaryAsync(bool v)
         {
-            var totalUsers = await _db.Users.CountAsync(u => !u.IsDeleted);
+            var totalUsers = await _db.Users.CountAsync(u => true);
             var activeProjectsCount = await _db.Projects.CountAsync(p => p.IsDeleted != true);
             // Assumed PendingTasksCount = tasks where status is NOT Done (StatusId != 3, or we check common pending status logic)
             // Let's assume StatusId != 3 represents Pending tasks (e.g. 1 = To Do, 2 = In Progress, 3 = Done)
@@ -110,6 +110,11 @@ namespace TaskTrackingSystem.WebApi.Features.Dashboard
             }
 
             return Result<IEnumerable<ProjectProgressDto>>.Success(progressList);
+        }
+
+        internal async System.Threading.Tasks.Task GetSummaryAsync(object value)
+        {
+            throw new NotImplementedException();
         }
     }
 }

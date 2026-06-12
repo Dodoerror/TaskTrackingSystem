@@ -1,5 +1,17 @@
+:root {
+    --brand-primary: #17a09d;
+    --brand-accent: #ffbf59;
+    --app-bg: #f7fbfc;
+    --text-primary: #1e293b;
+    --text-muted: #64748b;
+    --status-success-bg: #e5f7f4;
+    --status-warning-bg: #fff9e6;
+}
+
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: var(--app-bg);
+    color: var(--text-primary);
 }
 
 a, .btn-link {

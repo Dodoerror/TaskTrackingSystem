@@ -30,3 +30,5 @@ namespace TaskTrackingSystem.Database.AppDbContextModels
         public DateTime? ModifiedDateTime { get; set; }
     }
 }
+
+

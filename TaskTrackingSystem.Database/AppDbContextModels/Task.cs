@@ -33,7 +33,7 @@ public partial class Task
 
     public long? UpdatedBy { get; set; }
 
-    public bool? IsDeleted { get; set; }
+    public bool IsDeleted { get; set; }
 
     public virtual User? AssignedByNavigation { get; set; }
 

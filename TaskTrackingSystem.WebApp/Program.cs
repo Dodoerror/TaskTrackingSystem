@@ -9,7 +9,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents(options => options.DetailedErrors = true);
 
 // Register HttpClient for WebApi calls
-var webApiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://localhost:5018/api/";
+var webApiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "https://localhost:7215/api/";
+
 var webApiBuilder = builder.Services.AddHttpClient("WebApi", client =>
 {
     client.BaseAddress = new Uri(webApiBaseUrl);
