@@ -26,7 +26,6 @@
     <Folder Include="Features\Report\" />
     <Folder Include="Features\Task\" />
     <Folder Include="Features\Project\" />
-    <Folder Include="Features\Permission\" />
     <Folder Include="Features\Role\" />
   </ItemGroup>
 

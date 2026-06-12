@@ -24,7 +24,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.User.UserService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Auth.AuthService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Role.RoleService>();
-builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Permission.PermissionService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Project.ProjectService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Task.TaskService>();
 builder.Services.AddScoped<TaskTrackingSystem.WebApi.Features.Dashboard.DashboardService>();
@@ -61,8 +60,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 
 var app = builder.Build();
 
-// ── Seed default roles & users ──────────────────────────────────────────
-await DataSeeder.SeedAsync(app.Services);
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

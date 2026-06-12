@@ -1,4 +1,5 @@
 @page "/tasks"
+@page "/tasks/all"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -20,15 +21,15 @@
         <div class="flex items-center space-x-4">
             <!-- View Toggle Button Group -->
             <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                <button @onclick="() => SetView(false)" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 @(!isBacklogView ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+                <button @onclick='() => SetView("list")' class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 @(currentView == "list" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
                     <i data-lucide="list" class="h-3.5 w-3.5"></i>
                     <span>List View</span>
                 </button>
-                <button @onclick="() => SetView(true)" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 @(isBacklogView ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
+                <button @onclick='() => SetView("backlog")' class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 @(currentView == "backlog" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
                     <i data-lucide="layers" class="h-3.5 w-3.5"></i>
                     <span>Backlog View</span>
                 </button>
-                <button @onclick='() => Navigation.NavigateTo("/board")' class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 text-slate-500 hover:text-slate-800">
+                <button @onclick='() => SetView("board")' class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 @(currentView == "board" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800")">
                     <i data-lucide="kanban" class="h-3.5 w-3.5"></i>
                     <span>Board View</span>
                 </button>
@@ -85,7 +86,7 @@
             </div>
         </div>
 
-        @if (isBacklogView)
+        @if (currentView == "backlog")
         {
             <div class="space-y-6 mt-4">
                 @foreach (var proj in projects.Where(p => filterProjectId == 0 || p.Id == filterProjectId))
@@ -163,6 +164,67 @@
                 }
             </div>
         }
+        else if (currentView == "board")
+        {
+            <!-- Board View: Kanban Column view -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                @foreach (var column in columns)
+                {
+                    var tasksInColumn = FilteredTasks.Where(t => t.StatusId == column.StatusId).ToList();
+                    <div class="flex flex-col rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden min-h-[450px]">
+                        <!-- Column Header -->
+                        <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100">
+                            <div class="flex items-center space-x-2">
+                                <span class="h-2.5 w-2.5 rounded-full @column.DotColor"></span>
+                                <h3 class="text-sm font-semibold text-slate-900">@column.Name</h3>
+                            </div>
+                            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">@tasksInColumn.Count</span>
+                        </div>
+
+                        <!-- Cards -->
+                        <div class="flex-1 p-3 space-y-3 overflow-y-auto"
+                             @ondrop="() => HandleDrop(column.StatusId)"
+                             @ondragover="HandleDragOver"
+                             @ondragover:preventDefault="true">
+                            @if (tasksInColumn.Any())
+                            {
+                                @foreach (var task in tasksInColumn)
+                                {
+                                    <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
+                                         draggable="true" 
+                                         @ondragstart="() => HandleDragStart(task)">
+                                        <div class="flex items-start justify-between">
+                                            <h4 class="text-sm font-semibold text-slate-900">@task.Title</h4>
+                                            <span class="text-[10px] px-2 py-0.5 rounded-full font-medium @GetPriorityBadge(task.PriorityId)">@GetPriorityLabel(task.PriorityId)</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(task.Description))
+                                        {
+                                            <p class="text-xs text-slate-505 mt-1.5 line-clamp-2">@task.Description</p>
+                                        }
+                                        <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
+                                            <span class="text-[10px] text-slate-400">Due @task.DueDate.ToString("MMM dd")</span>
+                                            @{ var user = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo); }
+                                            @if (user != null)
+                                            {
+                                                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[8px] font-bold" title="@user.FirstName @user.LastName">
+                                                    @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="flex items-center justify-center py-8 h-full">
+                                    <p class="text-xs text-slate-400">Drop tasks here</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
         else
         {
             <!-- Tasks Table (List View) -->
@@ -175,11 +237,12 @@
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
                             <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @if (PagedTasks.Any())
+                         @if (PagedTasks.Any())
                         {
                             @foreach (var task in PagedTasks)
                             {
@@ -205,6 +268,22 @@
                                     <td class="px-6 py-4 text-sm text-slate-500">
                                         @{ var proj = projects.FirstOrDefault(p => p.Id == task.ProjectId); }
                                         @(proj?.Name ?? $"#{task.ProjectId}")
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-500 font-medium">
+                                        @{ var user = allUsers.FirstOrDefault(u => u.Id == task.AssignedTo); }
+                                        @if (user != null)
+                                        {
+                                            <div class="flex items-center gap-2">
+                                                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">
+                                                    @(user.FirstName.Length > 0 ? user.FirstName[0].ToString().ToUpper() : "")@(user.LastName.Length > 0 ? user.LastName[0].ToString().ToUpper() : "")
+                                                </span>
+                                                <span class="text-xs text-slate-700 font-semibold">@user.FirstName @user.LastName</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-xs text-slate-400 italic">Unassigned</span>
+                                        }
                                     </td>
                                     <td class="px-6 py-4 text-right">
                                         <div class="flex items-center justify-end space-x-2">
@@ -292,6 +371,22 @@
                         <input @bind="formDueDate" type="date" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
                     </div>
                 </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Assignee</label>
+                        <select @bind="formAssignedTo" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
+                            <option value="">Unassigned</option>
+                            @foreach (var u in allUsers)
+                            {
+                                <option value="@u.Id">@u.FirstName @u.LastName (@@@u.Username)</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Estimated Hours</label>
+                        <input @bind="formEstimatedHours" type="number" placeholder="Estimated Hours" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all" />
+                    </div>
+                </div>
 
                 @if (!string.IsNullOrEmpty(errorMessage))
                 {
@@ -347,9 +442,10 @@
     private Func<Task>? confirmAction;
     private List<TaskDto> taskList = new();
     private List<ProjectDto> projects = new();
+    private List<UserDto> allUsers = new();
 
-    // Backlog vs List View state
-    private bool isBacklogView = false;
+    // Backlog vs List vs Board View state
+    private string currentView = "list";
 
     // Search and Filters state
     private string searchInput = "";
@@ -362,10 +458,58 @@
     private int currentPage = 1;
     private int pageSize = 10;
 
-    private void SetView(bool backlog)
+    private List<KanbanColumn> columns = new()
     {
-        isBacklogView = backlog;
+        new(1, "To Do", "bg-slate-400"),
+        new(2, "In Progress", "bg-blue-500"),
+        new(3, "Done", "bg-emerald-500")
+    };
+
+    private TaskDto? draggedTask;
+
+    private void SetView(string view)
+    {
+        currentView = view;
         StateHasChanged();
+    }
+
+    private void HandleDragStart(TaskDto task)
+    {
+        draggedTask = task;
+    }
+
+    private void HandleDragOver()
+    {
+        // Allow dropping
+    }
+
+    private async Task HandleDrop(long newStatusId)
+    {
+        if (draggedTask != null && draggedTask.StatusId != newStatusId)
+        {
+            await MoveTask(draggedTask.Id, newStatusId);
+        }
+        draggedTask = null;
+    }
+
+    private async Task MoveTask(long taskId, long newStatusId)
+    {
+        var client = ApiClient.CreateClient();
+        try
+        {
+            var response = await client.PatchAsync($"Task/{taskId}/status?statusId={newStatusId}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var task = taskList.FirstOrDefault(t => t.Id == taskId);
+                if (task != null) task.StatusId = newStatusId;
+                await LoadTasks();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Move task error: {ex.Message}");
+        }
     }
 
     private void ApplySearch()
@@ -447,6 +591,8 @@
     private long formStatusId = 1;
     private long formPriorityId = 2;
     private DateTime formDueDate = DateTime.Today.AddDays(7);
+    private long? formAssignedTo;
+    private int? formEstimatedHours;
 
     protected override async Task OnInitializedAsync()
     {
@@ -461,7 +607,8 @@
         {
             var tasksTask = client.GetFromJsonAsync<List<TaskDto>>("Task", Serialization.CaseInsensitive);
             var projectsTask = client.GetFromJsonAsync<List<ProjectDto>>("Project", Serialization.CaseInsensitive);
-            await System.Threading.Tasks.Task.WhenAll(tasksTask, projectsTask);
+            var usersTask = client.GetFromJsonAsync<List<UserDto>>("User", Serialization.CaseInsensitive);
+            await System.Threading.Tasks.Task.WhenAll(tasksTask, projectsTask, usersTask);
 
             var allTasks = tasksTask.Result ?? new();
             // Non-admin: only show tasks assigned to them
@@ -469,6 +616,7 @@
                 ? allTasks.Where(t => t.AssignedTo == currentUserId).ToList()
                 : allTasks;
             projects = projectsTask.Result ?? new();
+            allUsers = usersTask.Result ?? new();
 
             if (TaskIdParam.HasValue && TaskIdParam > 0)
             {
@@ -526,6 +674,8 @@
         formStatusId = 1;
         formPriorityId = 2;
         formDueDate = DateTime.Today.AddDays(7);
+        formAssignedTo = null;
+        formEstimatedHours = null;
         errorMessage = null;
         showModal = true;
     }
@@ -540,6 +690,8 @@
         formStatusId = task.StatusId;
         formPriorityId = task.PriorityId;
         formDueDate = task.DueDate;
+        formAssignedTo = task.AssignedTo;
+        formEstimatedHours = task.EstimatedHours;
         errorMessage = null;
         showModal = true;
     }
@@ -641,7 +793,9 @@
                     Description = formDescription,
                     StatusId = formStatusId,
                     PriorityId = formPriorityId,
-                    DueDate = formDueDate
+                    DueDate = formDueDate,
+                    AssignedTo = formAssignedTo,
+                    EstimatedHours = formEstimatedHours
                 };
                 var response = await client.PutAsJsonAsync($"Task/{editingId}", dto);
                 var res = await response.Content.ReadFromJsonAsync<Result>(Serialization.CaseInsensitive);
@@ -660,7 +814,9 @@
                     ProjectId = formProjectId,
                     StatusId = formStatusId,
                     PriorityId = formPriorityId,
-                    DueDate = formDueDate
+                    DueDate = formDueDate,
+                    AssignedTo = formAssignedTo,
+                    EstimatedHours = formEstimatedHours
                 };
                 var response = await client.PostAsJsonAsync("Task", dto);
                 var res = await response.Content.ReadFromJsonAsync<Result<TaskDto>>(Serialization.CaseInsensitive);
@@ -739,4 +895,6 @@
         3 => "High",
         _ => "—"
     };
+
+    private sealed record KanbanColumn(long StatusId, string Name, string DotColor);
 }

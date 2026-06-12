@@ -5,7 +5,7 @@
 @using System.Text
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @attribute [Authorize]
-@inject IHttpClientFactory HttpClientFactory
+@inject ApiClientService ApiClient
 @inject IJSRuntime JS
 
 <PageTitle>Employee Productivity Report</PageTitle>
@@ -183,7 +183,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var client = HttpClientFactory.CreateClient("WebApi");
+        var client = ApiClient.CreateClient();
         try
         {
             var usersTask = client.GetFromJsonAsync<List<UserDto>>("User");

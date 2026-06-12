@@ -81,28 +81,52 @@ public static class AccountEndpoints
         {
             try
             {
-                var result = await response.Content.ReadFromJsonAsync<Result<AuthResponseDto>>(Serialization.CaseInsensitive);
-                if (result != null && !string.IsNullOrEmpty(result.ErrorMessage))
+                var contentString = await response.Content.ReadAsStringAsync();
+                
+                // Try parsing as Result<AuthResponseDto>
+                try
                 {
-                    errorMessage = result.ErrorMessage;
-                }
-                else
-                {
-                    var errorObj = await response.Content.ReadFromJsonAsync<JsonElement>();
-                    if (errorObj.ValueKind == JsonValueKind.Object && errorObj.TryGetProperty("errors", out var errorsProp))
+                    var result = JsonSerializer.Deserialize<Result<AuthResponseDto>>(contentString, Serialization.CaseInsensitive);
+                    if (result != null && !string.IsNullOrEmpty(result.ErrorMessage))
                     {
-                        var errorsList = new List<string>();
-                        foreach (var prop in errorsProp.EnumerateObject())
+                        errorMessage = result.ErrorMessage;
+                    }
+                }
+                catch
+                {
+                    // Ignore and fall back to checking validation errors
+                }
+
+                // If no errorMessage from Result, try parsing standard validation errors
+                if (errorMessage == ResultMessages.RegistrationFailed)
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(contentString);
+                        var root = doc.RootElement;
+                        if (root.TryGetProperty("errors", out var errorsProp) && errorsProp.ValueKind == JsonValueKind.Object)
                         {
-                            foreach (var val in prop.Value.EnumerateArray())
+                            var errorsList = new List<string>();
+                            foreach (var prop in errorsProp.EnumerateObject())
                             {
-                                errorsList.Add(val.GetString() ?? "");
+                                foreach (var val in prop.Value.EnumerateArray())
+                                {
+                                    errorsList.Add(val.GetString() ?? "");
+                                }
+                            }
+                            if (errorsList.Count > 0)
+                            {
+                                errorMessage = string.Join(" ", errorsList.Where(s => !string.IsNullOrEmpty(s)));
                             }
                         }
-                        if (errorsList.Count > 0)
+                        else if (root.TryGetProperty("errorMessage", out var errMsgProp))
                         {
-                            errorMessage = string.Join(" ", errorsList);
+                            errorMessage = errMsgProp.GetString() ?? errorMessage;
                         }
+                    }
+                    catch
+                    {
+                        // Ignore and keep fallback
                     }
                 }
             }
