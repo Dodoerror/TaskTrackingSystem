@@ -10,7 +10,11 @@
     {
         @foreach (var menu in menus)
         {
+<<<<<<< HEAD
             @if (menu.SubMenus != null && menu.SubMenus.Count > 0)
+=======
+            @if (menu.SubMenus.Any())
+>>>>>>> 98d0638a4677eae5e5f5f54c9e414a1210c816c5
             {
                 <!-- Parent with sub-menus: collapsible dropdown -->
                 <button class="nav-dropdown-toggle @(IsMenuGroupExpanded(menu.MenuCode) ? "expanded" : "")"
@@ -71,7 +75,11 @@
     {
         @foreach (var link in fallbackLinks)
         {
+<<<<<<< HEAD
             @if (link.Children != null && link.Children.Count > 0)
+=======
+            @if (link.Children is { Count: > 0 })
+>>>>>>> 98d0638a4677eae5e5f5f54c9e414a1210c816c5
             {
                 <!-- Fallback parent with children: collapsible dropdown -->
                 <button class="nav-dropdown-toggle @(IsFallbackGroupExpanded(link.Label) ? "expanded" : "")"
@@ -331,8 +339,13 @@
         var links = new List<FallbackLink>
         {
             new("/dashboard", "Dashboard", "layout-dashboard", NavLinkMatch.All),
+<<<<<<< HEAD
             new FallbackLink("/projects", "Projects", "folder-kanban", NavLinkMatch.Prefix, projectChildren),
             new FallbackLink("/tasks", "Tasks", "check-square", NavLinkMatch.Prefix, taskChildren)
+=======
+            new("/projects", "Projects", "folder-kanban", NavLinkMatch.Prefix),
+            new("/tasks", "Tasks", "check-square", NavLinkMatch.Prefix)
+>>>>>>> 98d0638a4677eae5e5f5f54c9e414a1210c816c5
         };
 
         if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))

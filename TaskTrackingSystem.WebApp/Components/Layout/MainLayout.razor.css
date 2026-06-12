@@ -6,8 +6,12 @@
 
 main {
     flex: 1;
+<<<<<<< HEAD
 /*    background-color: #f9dce1;*/
     /* Using your soft pink for the main area */
+=======
+    background-color: var(--app-bg);
+>>>>>>> 98d0638a4677eae5e5f5f54c9e414a1210c816c5
 }
 
 .sidebar {

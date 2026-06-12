@@ -11,6 +11,7 @@
     border-left: 3px solid transparent;
 }
 
+<<<<<<< HEAD
 ::deep a.nav-link-item:hover {
     background-color: #F9FAFB; /* bg-slate-50 */
     color: #111827; /* text-slate-900 */
@@ -82,4 +83,42 @@
     font-size: 0.8125rem;
     border-left: none !important;
     border-radius: 0.5rem;
+=======
+::deep a.nav-link,
+::deep .nav-link {
+    color: var(--text-muted) !important;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+::deep a.nav-link:hover,
+::deep .nav-link:hover {
+    color: var(--text-primary) !important;
+    background-color: var(--status-success-bg) !important;
+}
+
+::deep a.active {
+    background-color: var(--status-success-bg) !important;
+    color: var(--brand-primary) !important;
+    font-weight: 600;
+}
+
+::deep a.active i {
+    color: var(--brand-primary) !important;
+}
+
+summary {
+    color: var(--text-muted) !important;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+summary:hover {
+    color: var(--text-primary) !important;
+    background-color: var(--status-success-bg) !important;
+}
+
+details[open] summary {
+    color: var(--text-primary) !important;
+>>>>>>> 98d0638a4677eae5e5f5f54c9e414a1210c816c5
 }
